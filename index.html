@@ -3,169 +3,771 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hello P 人世界 - 學習版</title>
+    <title>P 人任務助手</title>
     <style>
-      /* 🎨 CSS 變數 - 方便統一管理顏色 */
+      /* 🎨 CSS 變數系統 */
       :root { 
-        /* 系統主題設定 */
-        color-scheme: light dark; 
+        color-scheme: light dark;
         
-        /* 自定義顏色變數 */
-        --primary-color: #6366f1;      /* 主要色 - 靛藍 */
-        --secondary-color: #ec4899;    /* 次要色 - 粉紅 */
-        --bg-color: #f8fafc;          /* 背景色 - 淺灰 */
-        --text-color: #1e293b;        /* 文字色 - 深灰 */
-        --accent-color: #10b981;      /* 強調色 - 綠色 */
+        /* 🎯 主題色彩 */
+        --primary: #6366f1;        /* 靛藍 - 主要按鈕 */
+        --secondary: #ec4899;      /* 粉紅 - 強調元素 */
+        --success: #10b981;        /* 綠色 - 完成狀態 */
+        --warning: #f59e0b;        /* 橘色 - 進行中 */
+        --danger: #ef4444;         /* 紅色 - 刪除 */
         
-        /* 字體大小 */
+        /* 🌈 中性色彩 */
+        --bg-primary: #ffffff;     /* 主背景 */
+        --bg-secondary: #f8fafc;   /* 次要背景 */
+        --bg-tertiary: #e2e8f0;    /* 第三層背景 */
+        --text-primary: #1e293b;   /* 主要文字 */
+        --text-secondary: #64748b; /* 次要文字 */
+        --text-muted: #94a3b8;     /* 提示文字 */
+        --border: #e2e8f0;         /* 邊框 */
+        --shadow: rgba(0, 0, 0, 0.1);
+        
+        /* 📏 尺寸系統 */
+        --space-xs: 0.25rem;  /* 4px */
+        --space-sm: 0.5rem;   /* 8px */
+        --space-md: 1rem;     /* 16px */
+        --space-lg: 1.5rem;   /* 24px */
+        --space-xl: 2rem;     /* 32px */
+        --space-2xl: 3rem;    /* 48px */
+        
+        --radius-sm: 0.375rem; /* 6px */
+        --radius-md: 0.5rem;   /* 8px */
+        --radius-lg: 1rem;     /* 16px */
+        
         --font-sm: 0.875rem;   /* 14px */
         --font-base: 1rem;     /* 16px */
         --font-lg: 1.125rem;   /* 18px */
         --font-xl: 1.25rem;    /* 20px */
         --font-2xl: 1.5rem;    /* 24px */
-        --font-3xl: 1.875rem;  /* 30px */
-        
-        /* 間距 */
-        --space-xs: 0.25rem;   /* 4px */
-        --space-sm: 0.5rem;    /* 8px */
-        --space-md: 1rem;      /* 16px */
-        --space-lg: 1.5rem;    /* 24px */
-        --space-xl: 2rem;      /* 32px */
-        
-        /* 圓角 */
-        --radius-sm: 0.25rem;  /* 4px */
-        --radius-md: 0.5rem;   /* 8px */
-        --radius-lg: 1rem;     /* 16px */
       }
       
-      /* 🌙 深色模式設定 */
+      /* 🌙 深色模式 */
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg-color: #0f172a;
-          --text-color: #f1f5f9;
+          --bg-primary: #0f172a;
+          --bg-secondary: #1e293b;
+          --bg-tertiary: #334155;
+          --text-primary: #f1f5f9;
+          --text-secondary: #cbd5e1;
+          --text-muted: #64748b;
+          --border: #334155;
+          --shadow: rgba(0, 0, 0, 0.3);
         }
       }
       
-      /* 📱 基礎樣式重置 */
-      html, body { 
-        height: 100%; 
+      /* 🔄 基礎重置 */
+      * {
+        box-sizing: border-box;
+      }
+      
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      
+      body {
+        font-family: 
+          "SF Pro Display", -apple-system, "Segoe UI", 
+          "Noto Sans TC", "PingFang TC", "Microsoft JhengHei",
+          system-ui, sans-serif;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      /* 📱 整體佈局結構 */
+      .app-container {
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100vh;
+        background-color: var(--bg-primary);
+        box-shadow: 0 0 20px var(--shadow);
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* 🎯 Header 區域 */
+      .header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: var(--space-lg) var(--space-md) var(--space-xl);
+        text-align: center;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      }
+      
+      .header h1 {
+        margin: 0 0 var(--space-sm);
+        font-size: var(--font-2xl);
+        font-weight: 700;
+        animation: slideDown 0.6s ease-out;
+      }
+      
+      .header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: var(--font-sm);
+        animation: fadeIn 0.8s ease-out 0.2s both;
+      }
+      
+      /* 📝 主要內容區 */
+      .main-content {
+        flex: 1;
+        padding: var(--space-lg) var(--space-md);
+      }
+      
+      .section {
+        margin-bottom: var(--space-xl);
+      }
+      
+      .section-title {
+        font-size: var(--font-lg);
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 var(--space-md);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      
+      /* 💡 收件匣輸入區 */
+      .inbox-input {
+        position: relative;
+        margin-bottom: var(--space-lg);
+      }
+      
+      .inbox-input input {
+        width: 100%;
+        padding: var(--space-md);
+        border: 2px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-base);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+      
+      .inbox-input input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+      
+      .inbox-input input::placeholder {
+        color: var(--text-muted);
+      }
+      
+      .add-btn {
+        position: absolute;
+        right: var(--space-sm);
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--primary);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: var(--font-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+      
+      .add-btn:hover {
+        background: #4f46e5;
+        transform: translateY(-50%) scale(1.05);
+      }
+      
+      /* ✅ 今日任務清單 */
+      .task-list {
+        list-style: none;
         margin: 0;
         padding: 0;
       }
       
-      body {
-        /* 使用我們定義的變數 */
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        
-        /* Flexbox 置中 */
+      .task-item {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-sm);
+        padding: var(--space-md);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        animation: slideUp 0.4s ease-out;
+      }
+      
+      .task-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        transform: translateY(-1px);
+      }
+      
+      .task-item.completed {
+        opacity: 0.6;
+        text-decoration: line-through;
+        border-color: var(--success);
+        background-color: rgba(16, 185, 129, 0.05);
+      }
+      
+      .task-item.in-progress {
+        border-color: var(--warning);
+        background-color: rgba(245, 158, 11, 0.05);
+        border-left: 4px solid var(--warning);
+      }
+      
+      .task-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .task-text {
+        font-size: var(--font-base);
+        margin: 0;
+      }
+      
+      .task-status {
+        font-size: var(--font-sm);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+      }
+      
+      .status-todo {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+      }
+      
+      .status-progress {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+      }
+      
+      .status-done {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+      }
+      
+      /* ⏰ 計時器模態框 */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+      }
+      
+      .modal.active {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 100svh; /* 新單位，支援手機瀏覽器 */
-        
-        /* 字體堆疊 - 優先使用系統字體 */
-        font-family: 
-          "SF Pro Display",           /* iOS/macOS */
-          -apple-system,              /* iOS/macOS 備用 */
-          "Segoe UI",                 /* Windows */
-          "Noto Sans TC",             /* Android 中文 */
-          "PingFang TC",              /* macOS 中文 */
-          "Microsoft JhengHei",       /* Windows 中文 */
-          system-ui,                  /* 系統預設 */
-          sans-serif;                 /* 最後備用 */
-        
-        /* 提升文字渲染品質 */
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
       }
       
-      /* 🎯 主標題樣式 */
-      h1 { 
-        margin: 0; 
-        
-        /* 響應式字體大小 - 會根據螢幕大小調整 */
-        font-size: clamp(2rem, 6vw, 3.5rem);
-        
-        /* 字體粗細 */
+      .modal-content {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-2xl);
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        max-width: 300px;
+        width: 90%;
+        animation: scaleIn 0.3s ease 0.1s both;
+      }
+      
+      .timer-display {
+        font-size: 3rem;
         font-weight: 700;
-        
-        /* 行高 */
-        line-height: 1.2;
-        
-        /* 字間距 */
-        letter-spacing: -0.02em;
-        
-        /* 漸層文字效果 */
-        background: linear-gradient(
-          135deg, 
-          var(--primary-color), 
-          var(--secondary-color), 
-          var(--accent-color)
-        );
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        
-        /* 文字陰影 - 只在淺色模式顯示 */
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-        
-        /* 動畫效果 */
-        animation: fadeInUp 0.8s ease-out;
+        color: var(--primary);
+        margin: var(--space-md) 0;
+        font-variant-numeric: tabular-nums;
       }
       
-      /* 🎭 動畫定義 */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+      .timer-controls {
+        display: flex;
+        gap: var(--space-sm);
+        justify-content: center;
+        margin-top: var(--space-lg);
       }
       
-      /* 📱 手機優化 */
+      /* 🔘 按鈕系統 */
+      .btn {
+        padding: var(--space-sm) var(--space-md);
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: var(--font-base);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+      }
+      
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+      }
+      
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+      
+      .btn-secondary:hover {
+        background: #cbd5e1;
+      }
+      
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      
+      .btn-success:hover {
+        background: #059669;
+      }
+      
+      /* 📱 響應式設計 */
       @media (max-width: 640px) {
-        body {
+        .app-container {
+          box-shadow: none;
+        }
+        
+        .header {
+          border-radius: 0;
+        }
+        
+        .main-content {
           padding: var(--space-md);
         }
         
-        h1 {
-          text-align: center;
-          /* 手機上取消漸層，避免效能問題 */
-          background: none;
-          -webkit-text-fill-color: var(--text-color);
-          color: var(--primary-color);
+        .timer-display {
+          font-size: 2.5rem;
         }
       }
       
-      /* 🎨 互動效果 - 滑鼠懸停 */
-      h1:hover {
-        transform: scale(1.05);
-        transition: transform 0.3s ease;
-        cursor: default;
+      /* 🎭 動畫效果 */
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       
-      /* 🔧 除錯模式 - 取消註解可看到邊界 */
-      /*
-      * {
-        outline: 1px solid red !important;
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      */
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      /* 🎯 空狀態 */
+      .empty-state {
+        text-align: center;
+        padding: var(--space-2xl);
+        color: var(--text-muted);
+      }
+      
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+      }
     </style>
   </head>
   <body>
-    <h1>Hello P 人世界</h1>
-    
-    <!-- 💡 開發者註解：下一步可以加入的元素 -->
-    <!--
-    <div class="container">
-      <p>歡迎來到為 P 人設計的友善工具！</p>
-      <button>開始使用</button>
+    <div class="app-container">
+      <!-- 🎯 Header 區域 -->
+      <header class="header">
+        <h1>P 人任務助手</h1>
+        <p>低壓力 • 好上手 • 專為拖延症設計</p>
+      </header>
+      
+      <!-- 📝 主要內容 -->
+      <main class="main-content">
+        <!-- 💡 靈感收件匣 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>💡</span>
+            丟想法 (隨時記錄)
+          </h2>
+          <div class="inbox-input">
+            <input 
+              type="text" 
+              id="ideaInput" 
+              placeholder="有什麼想法就丟進來..." 
+              maxlength="100"
+            >
+            <button class="add-btn" onclick="addIdea()">+</button>
+          </div>
+        </section>
+        
+        <!-- ✅ 今日任務 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>✅</span>
+            今日清單 (最多3件事)
+            <span id="taskCounter" style="color: var(--text-muted); font-size: var(--font-sm);">(0/3)</span>
+          </h2>
+          
+          <ul class="task-list" id="todayTasks">
+            <!-- 任務會動態加入這裡 -->
+          </ul>
+          
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">🎯</div>
+            <p>還沒有今日任務<br>從上方輸入框新增想法開始吧！</p>
+          </div>
+        </section>
+        
+        <!-- 📦 收件匣 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>📦</span>
+            收件匣 (待整理)
+          </h2>
+          <ul class="task-list" id="inboxTasks">
+            <!-- 收件匣項目 -->
+          </ul>
+          
+          <div class="empty-state" id="inboxEmpty">
+            <div class="empty-state-icon">📝</div>
+            <p>收件匣是空的<br>很棒，保持這個狀態！</p>
+          </div>
+        </section>
+      </main>
     </div>
-    -->
+    
+    <!-- ⏰ 5分鐘計時器模態框 -->
+    <div class="modal" id="timerModal">
+      <div class="modal-content">
+        <h3 id="timerTitle">5 分鐘專注模式</h3>
+        <div class="timer-display" id="timerDisplay">05:00</div>
+        <p id="timerTask">準備開始...</p>
+        <div class="timer-controls">
+          <button class="btn btn-primary" onclick="startTimer()">開始</button>
+          <button class="btn btn-secondary" onclick="closeTimer()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 🗂️ 資料結構
+      let tasks = {
+        inbox: [],      // 收件匣任務
+        today: []       // 今日任務
+      };
+      
+      let timerInterval = null;
+      let currentTask = null;
+      let timeLeft = 300; // 5分鐘 = 300秒
+      
+      // 💾 本地儲存功能
+      function saveData() {
+        localStorage.setItem('p-person-tasks', JSON.stringify(tasks));
+      }
+      
+      function loadData() {
+        const saved = localStorage.getItem('p-person-tasks');
+        if (saved) {
+          tasks = JSON.parse(saved);
+        }
+      }
+      
+      // 🏗️ 初始化
+      document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+        renderTasks();
+        updateCounters();
+        
+        // Enter 鍵快速新增
+        document.getElementById('ideaInput').addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            addIdea();
+          }
+        });
+      });
+      
+      // ➕ 新增想法到收件匣
+      function addIdea() {
+        const input = document.getElementById('ideaInput');
+        const text = input.value.trim();
+        
+        if (!text) return;
+        
+        // 建立新任務
+        const newTask = {
+          id: Date.now(),
+          text: text,
+          status: 'todo',      // todo, in-progress, completed
+          createdAt: new Date().toISOString(),
+          location: 'inbox'    // inbox, today
+        };
+        
+        tasks.inbox.unshift(newTask); // 加到最前面
+        input.value = '';
+        
+        saveData();
+        renderTasks();
+        updateCounters();
+        
+        // 顯示成功動畫
+        showNotification('想法已收錄！ ✨');
+      }
+      
+      // 🎯 移動任務到今日清單
+      function moveToToday(taskId) {
+        if (tasks.today.length >= 3) {
+          showNotification('今日清單已滿 (3/3)，請先完成一些任務 🙏');
+          return;
+        }
+        
+        const taskIndex = tasks.inbox.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+          const task = tasks.inbox.splice(taskIndex, 1)[0];
+          task.location = 'today';
+          tasks.today.push(task);
+          
+          saveData();
+          renderTasks();
+          updateCounters();
+          showNotification('已加入今日清單！ 🎯');
+        }
+      }
+      
+      // ⏰ 開始任務 (顯示選項)
+      function startTask(taskId) {
+        const task = [...tasks.today, ...tasks.inbox].find(t => t.id === taskId);
+        if (!task) return;
+        
+        const choice = confirm('選擇開始方式：\n確定 = 5分鐘專注模式 ⏰\n取消 = 直接標記完成 ✅');
+        
+        if (choice) {
+          // 5分鐘模式
+          currentTask = task;
+          openTimer(task);
+        } else {
+          // 直接完成
+          completeTask(taskId);
+        }
+      }
+      
+      // ✅ 完成任務
+      function completeTask(taskId) {
+        const todayIndex = tasks.today.findIndex(t => t.id === taskId);
+        if (todayIndex !== -1) {
+          tasks.today[todayIndex].status = 'completed';
+          tasks.today[todayIndex].completedAt = new Date().toISOString();
+          
+          saveData();
+          renderTasks();
+          updateCounters();
+          showNotification('太棒了！任務完成 🎉');
+        }
+      }
+      
+      // 🗑️ 刪除任務
+      function deleteTask(taskId, location) {
+        const list = location === 'today' ? tasks.today : tasks.inbox;
+        const index = list.findIndex(t => t.id === taskId);
+        if (index !== -1) {
+          list.splice(index, 1);
+          saveData();
+          renderTasks();
+          updateCounters();
+        }
+      }
+      
+      // 🎨 渲染任務列表
+      function renderTasks() {
+        renderTaskList('todayTasks', tasks.today, 'today');
+        renderTaskList('inboxTasks', tasks.inbox, 'inbox');
+        
+        // 顯示空狀態
+        document.getElementById('emptyState').style.display = 
+          tasks.today.length === 0 ? 'block' : 'none';
+        document.getElementById('inboxEmpty').style.display = 
+          tasks.inbox.length === 0 ? 'block' : 'none';
+      }
+      
+      function renderTaskList(containerId, taskList, location) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        taskList.forEach(task => {
+          const li = document.createElement('li');
+          li.className = `task-item ${task.status === 'completed' ? 'completed' : ''} ${task.status === 'in-progress' ? 'in-progress' : ''}`;
+          
+          let statusBadge = '';
+          let actions = '';
+          
+          if (task.status === 'completed') {
+            statusBadge = '<span class="task-status status-done">已完成</span>';
+          } else if (task.status === 'in-progress') {
+            statusBadge = '<span class="task-status status-progress">進行中</span>';
+          } else {
+            statusBadge = '<span class="task-status status-todo">待開始</span>';
+          }
+          
+          if (location === 'inbox') {
+            actions = `
+              <button class="btn btn-primary" onclick="moveToToday(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                → 今日
+              </button>
+              <button class="btn btn-secondary" onclick="deleteTask(${task.id}, 'inbox')" style="padding: 4px 8px; font-size: 12px;">
+                🗑️
+              </button>
+            `;
+          } else if (location === 'today' && task.status !== 'completed') {
+            actions = `
+              <button class="btn btn-success" onclick="startTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                開始
+              </button>
+            `;
+          }
+          
+          li.innerHTML = `
+            <div class="task-content">
+              <div>
+                <p class="task-text">${task.text}</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                ${statusBadge}
+                ${actions}
+              </div>
+            </div>
+          `;
+          
+          container.appendChild(li);
+        });
+      }
+      
+      // 📊 更新計數器
+      function updateCounters() {
+        const completed = tasks.today.filter(t => t.status === 'completed').length;
+        const total = tasks.today.length;
+        document.getElementById('taskCounter').textContent = `(${completed}/${total})`;
+      }
+      
+      // ⏰ 計時器功能
+      function openTimer(task) {
+        document.getElementById('timerModal').classList.add('active');
+        document.getElementById('timerTitle').textContent = '5 分鐘專注模式';
+        document.getElementById('timerTask').textContent = task.text;
+        timeLeft = 300;
+        updateTimerDisplay();
+      }
+      
+      function closeTimer() {
+        document.getElementById('timerModal').classList.remove('active');
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+      
+      function startTimer() {
+        if (timerInterval) return;
+        
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          updateTimerDisplay();
+          
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            
+            // 計時結束
+            const continueWork = confirm('時間到！ ⏰\n\n要繼續工作嗎？\n確定 = 繼續工作\n取消 = 標記為「已啟動」');
+            
+            if (continueWork) {
+              closeTimer();
+              showNotification('繼續加油！ 💪');
+            } else {
+              if (currentTask) {
+                const taskIndex = tasks.today.findIndex(t => t.id === currentTask.id);
+                if (taskIndex !== -1) {
+                  tasks.today[taskIndex].status = 'in-progress';
+                  saveData();
+                  renderTasks();
+                  updateCounters();
+                }
+              }
+              closeTimer();
+              showNotification('很棒！已經開始了 🚀');
+            }
+          }
+        }, 1000);
+        
+        // 更新按鈕
+        const controls = document.querySelector('.timer-controls');
+        controls.innerHTML = `
+          <button class="btn btn-success" onclick="completeTaskFromTimer()">完成了！</button>
+          <button class="btn btn-secondary" onclick="closeTimer()">停止</button>
+        `;
+      }
+      
+      function completeTaskFromTimer() {
+        if (currentTask) {
+          completeTask(currentTask.id);
+        }
+        closeTimer();
+      }
+      
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timerDisplay').textContent = 
+          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // 📢 通知系統
+      function showNotification(message) {
+        // 簡單的通知，你可以後續改成更美觀的
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: var(--success);
+          color: white;
+          padding: 12px 16px;
+          border-radius: 8px;
+          z-index: 1001;
+          animation: slideDown 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.animation = 'fadeOut 0.3s ease forwards';
+          setTimeout(() => notification.remove(), 300);
+        }, 2000);
+      }
+    </script>
   </body>
 </html>
