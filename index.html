@@ -3,22 +3,169 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hello P 人世界</title>
+    <title>Hello P 人世界 - 學習版</title>
     <style>
-      :root { color-scheme: light dark; }
-      html, body { height: 100%; }
-      body {
+      /* 🎨 CSS 變數 - 方便統一管理顏色 */
+      :root { 
+        /* 系統主題設定 */
+        color-scheme: light dark; 
+        
+        /* 自定義顏色變數 */
+        --primary-color: #6366f1;      /* 主要色 - 靛藍 */
+        --secondary-color: #ec4899;    /* 次要色 - 粉紅 */
+        --bg-color: #f8fafc;          /* 背景色 - 淺灰 */
+        --text-color: #1e293b;        /* 文字色 - 深灰 */
+        --accent-color: #10b981;      /* 強調色 - 綠色 */
+        
+        /* 字體大小 */
+        --font-sm: 0.875rem;   /* 14px */
+        --font-base: 1rem;     /* 16px */
+        --font-lg: 1.125rem;   /* 18px */
+        --font-xl: 1.25rem;    /* 20px */
+        --font-2xl: 1.5rem;    /* 24px */
+        --font-3xl: 1.875rem;  /* 30px */
+        
+        /* 間距 */
+        --space-xs: 0.25rem;   /* 4px */
+        --space-sm: 0.5rem;    /* 8px */
+        --space-md: 1rem;      /* 16px */
+        --space-lg: 1.5rem;    /* 24px */
+        --space-xl: 2rem;      /* 32px */
+        
+        /* 圓角 */
+        --radius-sm: 0.25rem;  /* 4px */
+        --radius-md: 0.5rem;   /* 8px */
+        --radius-lg: 1rem;     /* 16px */
+      }
+      
+      /* 🌙 深色模式設定 */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-color: #0f172a;
+          --text-color: #f1f5f9;
+        }
+      }
+      
+      /* 📱 基礎樣式重置 */
+      html, body { 
+        height: 100%; 
         margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        /* 使用我們定義的變數 */
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        
+        /* Flexbox 置中 */
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 100svh;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        min-height: 100svh; /* 新單位，支援手機瀏覽器 */
+        
+        /* 字體堆疊 - 優先使用系統字體 */
+        font-family: 
+          "SF Pro Display",           /* iOS/macOS */
+          -apple-system,              /* iOS/macOS 備用 */
+          "Segoe UI",                 /* Windows */
+          "Noto Sans TC",             /* Android 中文 */
+          "PingFang TC",              /* macOS 中文 */
+          "Microsoft JhengHei",       /* Windows 中文 */
+          system-ui,                  /* 系統預設 */
+          sans-serif;                 /* 最後備用 */
+        
+        /* 提升文字渲染品質 */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
       }
-      h1 { margin: 0; font-size: clamp(2rem, 6vw, 3.5rem); }
+      
+      /* 🎯 主標題樣式 */
+      h1 { 
+        margin: 0; 
+        
+        /* 響應式字體大小 - 會根據螢幕大小調整 */
+        font-size: clamp(2rem, 6vw, 3.5rem);
+        
+        /* 字體粗細 */
+        font-weight: 700;
+        
+        /* 行高 */
+        line-height: 1.2;
+        
+        /* 字間距 */
+        letter-spacing: -0.02em;
+        
+        /* 漸層文字效果 */
+        background: linear-gradient(
+          135deg, 
+          var(--primary-color), 
+          var(--secondary-color), 
+          var(--accent-color)
+        );
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        
+        /* 文字陰影 - 只在淺色模式顯示 */
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        
+        /* 動畫效果 */
+        animation: fadeInUp 0.8s ease-out;
+      }
+      
+      /* 🎭 動畫定義 */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      /* 📱 手機優化 */
+      @media (max-width: 640px) {
+        body {
+          padding: var(--space-md);
+        }
+        
+        h1 {
+          text-align: center;
+          /* 手機上取消漸層，避免效能問題 */
+          background: none;
+          -webkit-text-fill-color: var(--text-color);
+          color: var(--primary-color);
+        }
+      }
+      
+      /* 🎨 互動效果 - 滑鼠懸停 */
+      h1:hover {
+        transform: scale(1.05);
+        transition: transform 0.3s ease;
+        cursor: default;
+      }
+      
+      /* 🔧 除錯模式 - 取消註解可看到邊界 */
+      /*
+      * {
+        outline: 1px solid red !important;
+      }
+      */
     </style>
   </head>
   <body>
     <h1>Hello P 人世界</h1>
+    
+    <!-- 💡 開發者註解：下一步可以加入的元素 -->
+    <!--
+    <div class="container">
+      <p>歡迎來到為 P 人設計的友善工具！</p>
+      <button>開始使用</button>
+    </div>
+    -->
   </body>
 </html>
