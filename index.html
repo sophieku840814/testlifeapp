@@ -1,9 +1,165 @@
-<!doctype html>
+// 📊 分析儀表板 (開發用)
+      function showAnalytics() {
+        const retention = calculateRetention();
+        const events = JSON.parse(localStorage.getItem('p-person-events') || '[]');
+        const feedback = JSON.parse(localStorage.getItem('p-person-feedback') || 'null');
+        
+        const taskCreatedEvents = events.filter(e => e.eventName === 'task_created');
+        const timerStartedEvents = events.filter(e => e.eventName === 'timer_started');
+        const completedEvents = events.filter(e => e.eventName === 'task_completed');
+        const progressEvents = events.filter(e => e.eventName.includes('progress'));
+        
+        const analyticsHtml = `
+          <div style="font-size: var(--font-sm); line-height: 1.8;">
+            <h4>👤 用戶資訊</h4>
+            <p><strong>用戶ID:</strong> ${analytics.userId}</p>
+            <p><strong>首次造訪:</strong> ${new Date(analytics.userProfile.firstVisit).toLocaleString()}</p>
+            <p><strong>總會話數:</strong> ${analytics.userProfile.totalSessions}</p>
+            <p><strong>留存天數:</strong> ${retention.daysSinceFirstVisit} 天</p>
+            
+            <h4>📈 關鍵指標</h4>
+            <p><strong>啟動率:</strong> ${taskCreatedEvents.length > 0 ? '✅ 已啟動' : '❌ 未啟動'}</p>
+            <p><strong>任務創建數:</strong> ${taskCreatedEvents.length}</p>
+            <p><strong>計時器使用次數:</strong> ${timerStartedEvents.length}</p>
+            <p><strong>任務完成數:</strong> ${completedEvents.length}</p>
+            <p><strong>部分完成次數:</strong> ${progressEvents.length}</p>
+            
+            <h4>💬 用戶回饋</h4>
+            ${feedback ? `
+              <p><strong>滿意度:</strong> ${feedback.satisfaction === 'love' ? '😍 很喜歡' : feedback.satisfaction === 'okay' ? '😐 還可以' : '😞 不適合'}</p>
+              <p><strong>意見:</strong> ${feedback.comment || '無'}</p>
+            ` : '<p>尚未收集到回饋</p>'}
+            
+            <h4>🎯 使用模式</h4>
+            <p><strong>最常用功能:</strong> ${getMostUsedFeature(events)}</p>
+            <p><strong>平均每日任務:</strong> ${(taskCreatedEvents.length / Math.max(retention.daysSinceFirstVisit || 1, 1)).toFixed(1)}</p>
+          </div>
+        `;
+        
+        document.getElementById('analyticsContent').innerHTML = analyticsHtml;
+        document.getElementById('analyticsModal').classList.add('active');
+      }
+
+      function getMostUsedFeature(events) {
+        const featureCounts = {
+          'task_creation': events.filter(e => e.eventName === 'task_created').length,
+          'timer_usage': events.filter(e => e.eventName === 'timer_started').length,
+          'task_completion': events.filter(e => e.eventName.includes('completed')).length
+        };
+        
+        const maxFeature = Object.keys(featureCounts).reduce((a, b) => 
+          featureCounts[a] > featureCounts[b] ? a : b
+        );
+        
+        const featureNames = {
+          'task_creation': '建立任務',
+          'timer_usage': '計時器',
+          'task_completion': '完成任務'
+        };
+        
+        return featureNames[maxFeature] || '尚無數據';
+      }
+
+      function closeAnalytics() {
+        document.getElementById('analyticsModal').classList.remove('active');
+      }
+
+      function exportData() {
+        const exportData = {
+          userId: analytics.userId,
+          userProfile: analytics.userProfile,
+          events: JSON.parse(localStorage.getItem('p-person-events') || '[]'),
+          feedback: JSON.parse(localStorage.getItem('p-person-feedback') || 'null'),
+          tasks: tasks,
+          exportTime: new Date().toISOString()
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `p-person-data-${analytics.userId}-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        showNotification('數據已匯出 📋');
+        trackEvent('data_exported');
+      }
+
+      // 🎯 快捷鍵和彩蛋
+      function handleStatsClick() {
+        statsClickCount++;
+        if (statsClickCount >= 3) {
+          showAnalytics();
+          statsClickCount = 0; // 重置
+        }
+      }
+
+      document.addEventListener('keydown', function(e) {
+        // Ctrl + Shift + A = 顯示分析面板
+        if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+          e.preventDefault();
+          showAnalytics();
+        }
+        
+        // Ctrl + Shift + F = 強制顯示回饋面板
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+          e.preventDefault();
+          showFeedbackPrompt();
+        }
+      });<!doctype html>
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>P 人任務助手</title>
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      // 🔧 請替換成你的 GA4 測量 ID
+      gtag('config', 'GA_MEASUREMENT_ID', {
+        // 自訂配置
+        send_page_view: true,
+        anonymize_ip: true,
+        // 設定自訂維度和指標
+        custom_map: {
+          'custom_parameter_1': 'user_type',
+          'custom_parameter_2': 'task_category'
+        }
+      });
+      
+      // 🎯 P人專用事件追蹤函數
+      function trackToGA4(eventName, eventData = {}) {
+        // 清理和標準化事件數據
+        const cleanedData = {};
+        
+        // 只保留 GA4 支援的參數格式
+        Object.keys(eventData).forEach(key => {
+          const value = eventData[key];
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            // 轉換參數名為 GA4 格式（小寫+底線）
+            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            cleanedData[cleanKey] = value;
+          }
+        });
+        
+        // 發送到 GA4
+        gtag('event', eventName, {
+          event_category: 'P人任務助手',
+          ...cleanedData
+        });
+        
+        console.log('🔍 GA4 Event:', eventName, cleanedData);
+      }
+    </script>
+    
     <style>
       /* 🎨 CSS 變數系統 */
       :root { 
@@ -255,6 +411,40 @@
         background: rgba(16, 185, 129, 0.1);
         color: var(--success);
       }
+
+      /* 📋 已完成任務區塊 */
+      .completed-section {
+        margin-top: var(--space-lg);
+        border-top: 1px solid var(--border);
+        padding-top: var(--space-md);
+      }
+
+      .completed-toggle {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: var(--font-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) 0;
+        transition: color 0.2s ease;
+      }
+
+      .completed-toggle:hover {
+        color: var(--text-secondary);
+      }
+
+      .completed-list {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .completed-list.expanded {
+        max-height: 500px;
+      }
       
       /* ⏰ 計時器模態框 */
       .modal {
@@ -281,7 +471,7 @@
         padding: var(--space-2xl);
         text-align: center;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        max-width: 300px;
+        max-width: 350px;
         width: 90%;
         animation: scaleIn 0.3s ease 0.1s both;
       }
@@ -299,6 +489,16 @@
         gap: var(--space-sm);
         justify-content: center;
         margin-top: var(--space-lg);
+        flex-wrap: wrap;
+      }
+
+      .timer-task-name {
+        background: var(--bg-secondary);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        margin: var(--space-md) 0;
+        font-size: var(--font-sm);
+        color: var(--text-secondary);
       }
       
       /* 🔘 按鈕系統 */
@@ -343,6 +543,15 @@
       .btn-success:hover {
         background: #059669;
       }
+
+      .btn-warning {
+        background: var(--warning);
+        color: white;
+      }
+      
+      .btn-warning:hover {
+        background: #d97706;
+      }
       
       /* 📱 響應式設計 */
       @media (max-width: 640px) {
@@ -361,6 +570,10 @@
         .timer-display {
           font-size: 2.5rem;
         }
+
+        .timer-controls {
+          flex-direction: column;
+        }
       }
       
       /* 🎭 動畫效果 */
@@ -377,6 +590,11 @@
       @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
+      }
+
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
       }
       
       @keyframes scaleIn {
@@ -396,6 +614,17 @@
         margin-bottom: var(--space-md);
         opacity: 0.5;
       }
+
+      /* 🎊 慶祝動畫 */
+      @keyframes celebrate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+
+      .celebration {
+        animation: celebrate 0.5s ease-in-out;
+      }
     </style>
   </head>
   <body>
@@ -404,6 +633,9 @@
       <header class="header">
         <h1>P 人任務助手</h1>
         <p>低壓力 • 好上手 • 專為拖延症設計</p>
+        <!-- 隱藏的統計入口，點擊3次顯示 -->
+        <div style="position: absolute; top: 10px; right: 10px; opacity: 0.3; cursor: pointer;" 
+             onclick="handleStatsClick()" id="statsEntry">📊</div>
       </header>
       
       <!-- 📝 主要內容 -->
@@ -429,17 +661,29 @@
         <section class="section">
           <h2 class="section-title">
             <span>✅</span>
-            今日清單 (最多3件事)
+            今日清單 (同時進行最多 3 件事)
             <span id="taskCounter" style="color: var(--text-muted); font-size: var(--font-sm);">(0/3)</span>
           </h2>
           
           <ul class="task-list" id="todayTasks">
-            <!-- 任務會動態加入這裡 -->
+            <!-- 未完成任務會顯示在這裡 -->
           </ul>
           
           <div class="empty-state" id="emptyState" style="display: none;">
             <div class="empty-state-icon">🎯</div>
             <p>還沒有今日任務<br>從上方輸入框新增想法開始吧！</p>
+          </div>
+
+          <!-- 📋 已完成任務區塊 -->
+          <div class="completed-section" id="completedSection" style="display: none;">
+            <button class="completed-toggle" onclick="toggleCompleted()">
+              <span id="completedIcon">👇</span>
+              <span id="completedText">顯示已完成任務</span>
+              <span id="completedCount">(0)</span>
+            </button>
+            <ul class="task-list completed-list" id="completedTasks">
+              <!-- 已完成任務會顯示在這裡 -->
+            </ul>
           </div>
         </section>
         
@@ -461,15 +705,75 @@
       </main>
     </div>
     
-    <!-- ⏰ 5分鐘計時器模態框 -->
+    <!-- ⏰ 25分鐘計時器模態框 -->
     <div class="modal" id="timerModal">
       <div class="modal-content">
-        <h3 id="timerTitle">5 分鐘專注模式</h3>
-        <div class="timer-display" id="timerDisplay">05:00</div>
-        <p id="timerTask">準備開始...</p>
-        <div class="timer-controls">
-          <button class="btn btn-primary" onclick="startTimer()">開始</button>
+        <h3 id="timerTitle">25 分鐘專注模式 🍅</h3>
+        <div class="timer-task-name" id="timerTaskName">準備開始...</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-controls" id="timerControls">
+          <button class="btn btn-primary" onclick="startTimer()">開始專注</button>
           <button class="btn btn-secondary" onclick="closeTimer()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📝 用戶回饋模態框 -->
+    <div class="modal" id="feedbackModal">
+      <div class="modal-content">
+        <h3>🤔 幫助我們改進！</h3>
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">
+          您已經使用 P 人任務助手一週了，想聽聽您的想法！
+        </p>
+        
+        <div style="text-align: left; margin-bottom: var(--space-lg);">
+          <div style="margin-bottom: var(--space-md);">
+            <strong>您覺得這個工具如何？</strong>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="love" onchange="handleSatisfactionChange(this)">
+              <span>😍 很喜歡！對我很有用</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="okay" onchange="handleSatisfactionChange(this)">
+              <span>😐 還可以，但有些地方可以改進</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="not_useful" onchange="handleSatisfactionChange(this)">
+              <span>😞 不太適合我</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="followUpQuestion" style="display: none; text-align: left; margin-bottom: var(--space-lg);">
+          <div style="margin-bottom: var(--space-sm);">
+            <strong id="followUpTitle">為什麼呢？</strong>
+          </div>
+          <textarea 
+            id="feedbackText" 
+            placeholder="請分享您的想法..." 
+            style="width: 100%; min-height: 80px; padding: var(--space-sm); border: 1px solid var(--border); border-radius: var(--radius-sm); resize: vertical;"
+          ></textarea>
+        </div>
+        
+        <div class="timer-controls">
+          <button class="btn btn-primary" onclick="submitFeedback()">送出回饋</button>
+          <button class="btn btn-secondary" onclick="closeFeedback()">稍後再說</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📊 分析儀表板模態框 (開發用) -->
+    <div class="modal" id="analyticsModal">
+      <div class="modal-content" style="max-width: 500px; text-align: left;">
+        <h3>📊 使用統計 (開發者模式)</h3>
+        <div id="analyticsContent">
+          <!-- 內容會由 JavaScript 動態生成 -->
+        </div>
+        <div style="text-align: center; margin-top: var(--space-lg);">
+          <button class="btn btn-secondary" onclick="closeAnalytics()">關閉</button>
+          <button class="btn btn-primary" onclick="exportData()">匯出資料</button>
         </div>
       </div>
     </div>
@@ -478,30 +782,58 @@
       // 🗂️ 資料結構
       let tasks = {
         inbox: [],      // 收件匣任務
-        today: []       // 今日任務
+        today: [],      // 今日任務 (包含未完成和已完成)
+        completed: []   // 今日已完成任務 (分開儲存以便管理)
       };
       
       let timerInterval = null;
       let currentTask = null;
-      let timeLeft = 300; // 5分鐘 = 300秒
+      let timeLeft = 1500; // 25分鐘 = 1500秒
+      let completedExpanded = false;
+      let statsClickCount = 0;
       
       // 💾 本地儲存功能
       function saveData() {
-        localStorage.setItem('p-person-tasks', JSON.stringify(tasks));
+        // 合併已完成任務到 today 陣列中，保持向下相容
+        const allTodayTasks = [...tasks.today, ...tasks.completed];
+        const dataToSave = {
+          inbox: tasks.inbox,
+          today: allTodayTasks
+        };
+        localStorage.setItem('p-person-tasks', JSON.stringify(dataToSave));
       }
       
       function loadData() {
         const saved = localStorage.getItem('p-person-tasks');
         if (saved) {
-          tasks = JSON.parse(saved);
+          const data = JSON.parse(saved);
+          
+          // 分離已完成和未完成任務
+          tasks.inbox = data.inbox || [];
+          const allTodayTasks = data.today || [];
+          
+          tasks.today = allTodayTasks.filter(t => t.status !== 'completed');
+          tasks.completed = allTodayTasks.filter(t => t.status === 'completed');
         }
       }
       
       // 🏗️ 初始化
       document.addEventListener('DOMContentLoaded', function() {
+        initAnalytics();
         loadData();
         renderTasks();
         updateCounters();
+        
+        // 檢查是否為回訪用戶
+        const retention = calculateRetention();
+        if (retention.isReturnUser) {
+          trackEvent('return_visit', retention);
+          
+          // Day 7+ 用戶顯示回饋收集
+          if (retention.daysSinceFirstVisit >= 7) {
+            setTimeout(showFeedbackPrompt, 8000); // 8秒後顯示，給用戶更多時間使用
+          }
+        }
         
         // Enter 鍵快速新增
         document.getElementById('ideaInput').addEventListener('keypress', function(e) {
@@ -530,6 +862,28 @@
         tasks.inbox.unshift(newTask); // 加到最前面
         input.value = '';
         
+        // 📊 追蹤啟動率指標 (GA4: 第一個任務創建視為轉換)
+        analytics.userProfile.totalTasksCreated += 1;
+        saveUserProfile();
+        
+        const isFirstTask = analytics.userProfile.totalTasksCreated === 1;
+        
+        trackEvent('task_created', { 
+          task_text: text.substring(0, 50), // 只記錄前50字
+          location: 'inbox',
+          total_tasks: analytics.userProfile.totalTasksCreated,
+          is_first_task: isFirstTask
+        });
+        
+        // GA4: 第一個任務視為啟動轉換
+        if (isFirstTask && typeof gtag !== 'undefined') {
+          gtag('event', 'conversion', {
+            event_category: 'engagement',
+            event_label: 'first_task_created',
+            value: 1
+          });
+        }
+        
         saveData();
         renderTasks();
         updateCounters();
@@ -542,6 +896,7 @@
       function moveToToday(taskId) {
         if (tasks.today.length >= 3) {
           showNotification('今日清單已滿 (3/3)，請先完成一些任務 🙏');
+          trackEvent('move_to_today_failed', { reason: 'list_full' });
           return;
         }
         
@@ -550,6 +905,8 @@
           const task = tasks.inbox.splice(taskIndex, 1)[0];
           task.location = 'today';
           tasks.today.push(task);
+          
+          trackEvent('move_to_today', { taskId: taskId });
           
           saveData();
           renderTasks();
@@ -560,18 +917,19 @@
       
       // ⏰ 開始任務 (顯示選項)
       function startTask(taskId) {
-        const task = [...tasks.today, ...tasks.inbox].find(t => t.id === taskId);
+        const task = tasks.today.find(t => t.id === taskId);
         if (!task) return;
         
-        const choice = confirm('選擇開始方式：\n確定 = 5分鐘專注模式 ⏰\n取消 = 直接標記完成 ✅');
+        // 顯示確認對話框
+        const userChoice = confirm('開始 25 分鐘專注模式？\n\n確定 = 開啟專注計時器 ⏰\n取消 = 不進行，保持待開始狀態');
         
-        if (choice) {
-          // 5分鐘模式
+        if (userChoice) {
+          // 50分鐘專注模式
           currentTask = task;
+          trackEvent('timer_requested', { taskId: taskId });
           openTimer(task);
         } else {
-          // 直接完成
-          completeTask(taskId);
+          trackEvent('timer_cancelled', { taskId: taskId });
         }
       }
       
@@ -579,31 +937,89 @@
       function completeTask(taskId) {
         const todayIndex = tasks.today.findIndex(t => t.id === taskId);
         if (todayIndex !== -1) {
-          tasks.today[todayIndex].status = 'completed';
-          tasks.today[todayIndex].completedAt = new Date().toISOString();
+          const task = tasks.today.splice(todayIndex, 1)[0];
+          task.status = 'completed';
+          task.completedAt = new Date().toISOString();
+          tasks.completed.push(task);
+          
+          // 📊 追蹤完成指標 (GA4: 任務完成視為目標達成)
+          trackEvent('task_completed', { 
+            task_id: taskId, 
+            was_in_progress: task.status === 'in-progress',
+            total_completed_today: tasks.completed.length
+          });
+          
+          // GA4: 任務完成事件
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'level_up', {
+              event_category: 'engagement', 
+              level_name: `${tasks.completed.length}_tasks_completed`,
+              character: 'p_person_user'
+            });
+          }
           
           saveData();
           renderTasks();
           updateCounters();
           showNotification('太棒了！任務完成 🎉');
+          
+          // 如果沒有未完成任務，顯示慶祝動畫
+          if (tasks.today.length === 0) {
+            setTimeout(() => {
+              showNotification('今日任務全部完成！你太棒了！ 🎊');
+              trackEvent('all_tasks_completed_today', { totalCompleted: tasks.completed.length });
+            }, 500);
+          }
         }
       }
       
       // 🗑️ 刪除任務
       function deleteTask(taskId, location) {
-        const list = location === 'today' ? tasks.today : tasks.inbox;
-        const index = list.findIndex(t => t.id === taskId);
-        if (index !== -1) {
-          list.splice(index, 1);
-          saveData();
-          renderTasks();
-          updateCounters();
+        if (location === 'today') {
+          const index = tasks.today.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.today.splice(index, 1);
+          }
+        } else if (location === 'completed') {
+          const index = tasks.completed.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.completed.splice(index, 1);
+          }
+        } else {
+          const index = tasks.inbox.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.inbox.splice(index, 1);
+          }
+        }
+        
+        saveData();
+        renderTasks();
+        updateCounters();
+        showNotification('任務已刪除');
+      }
+
+      // 📋 切換已完成任務顯示
+      function toggleCompleted() {
+        completedExpanded = !completedExpanded;
+        const completedList = document.getElementById('completedTasks');
+        const icon = document.getElementById('completedIcon');
+        const text = document.getElementById('completedText');
+        
+        if (completedExpanded) {
+          completedList.classList.add('expanded');
+          icon.textContent = '👆';
+          text.textContent = '隱藏已完成任務';
+        } else {
+          completedList.classList.remove('expanded');
+          icon.textContent = '👇';
+          text.textContent = '顯示已完成任務';
         }
       }
       
       // 🎨 渲染任務列表
       function renderTasks() {
         renderTaskList('todayTasks', tasks.today, 'today');
+        renderTaskList('completedTasks', tasks.completed, 'completed');
         renderTaskList('inboxTasks', tasks.inbox, 'inbox');
         
         // 顯示空狀態
@@ -611,6 +1027,10 @@
           tasks.today.length === 0 ? 'block' : 'none';
         document.getElementById('inboxEmpty').style.display = 
           tasks.inbox.length === 0 ? 'block' : 'none';
+
+        // 顯示已完成區塊
+        document.getElementById('completedSection').style.display = 
+          tasks.completed.length > 0 ? 'block' : 'none';
       }
       
       function renderTaskList(containerId, taskList, location) {
@@ -626,8 +1046,18 @@
           
           if (task.status === 'completed') {
             statusBadge = '<span class="task-status status-done">已完成</span>';
+            actions = `
+              <button class="btn btn-secondary" onclick="deleteTask(${task.id}, 'completed')" style="padding: 4px 8px; font-size: 12px;">
+                🗑️
+              </button>
+            `;
           } else if (task.status === 'in-progress') {
             statusBadge = '<span class="task-status status-progress">進行中</span>';
+            actions = `
+              <button class="btn btn-success" onclick="completeTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                完成
+              </button>
+            `;
           } else {
             statusBadge = '<span class="task-status status-todo">待開始</span>';
           }
@@ -641,9 +1071,9 @@
                 🗑️
               </button>
             `;
-          } else if (location === 'today' && task.status !== 'completed') {
+          } else if (location === 'today' && task.status === 'todo') {
             actions = `
-              <button class="btn btn-success" onclick="startTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+              <button class="btn btn-warning" onclick="startTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
                 開始
               </button>
             `;
@@ -664,110 +1094,3 @@
           container.appendChild(li);
         });
       }
-      
-      // 📊 更新計數器
-      function updateCounters() {
-        const completed = tasks.today.filter(t => t.status === 'completed').length;
-        const total = tasks.today.length;
-        document.getElementById('taskCounter').textContent = `(${completed}/${total})`;
-      }
-      
-      // ⏰ 計時器功能
-      function openTimer(task) {
-        document.getElementById('timerModal').classList.add('active');
-        document.getElementById('timerTitle').textContent = '5 分鐘專注模式';
-        document.getElementById('timerTask').textContent = task.text;
-        timeLeft = 300;
-        updateTimerDisplay();
-      }
-      
-      function closeTimer() {
-        document.getElementById('timerModal').classList.remove('active');
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-      }
-      
-      function startTimer() {
-        if (timerInterval) return;
-        
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          updateTimerDisplay();
-          
-          if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            
-            // 計時結束
-            const continueWork = confirm('時間到！ ⏰\n\n要繼續工作嗎？\n確定 = 繼續工作\n取消 = 標記為「已啟動」');
-            
-            if (continueWork) {
-              closeTimer();
-              showNotification('繼續加油！ 💪');
-            } else {
-              if (currentTask) {
-                const taskIndex = tasks.today.findIndex(t => t.id === currentTask.id);
-                if (taskIndex !== -1) {
-                  tasks.today[taskIndex].status = 'in-progress';
-                  saveData();
-                  renderTasks();
-                  updateCounters();
-                }
-              }
-              closeTimer();
-              showNotification('很棒！已經開始了 🚀');
-            }
-          }
-        }, 1000);
-        
-        // 更新按鈕
-        const controls = document.querySelector('.timer-controls');
-        controls.innerHTML = `
-          <button class="btn btn-success" onclick="completeTaskFromTimer()">完成了！</button>
-          <button class="btn btn-secondary" onclick="closeTimer()">停止</button>
-        `;
-      }
-      
-      function completeTaskFromTimer() {
-        if (currentTask) {
-          completeTask(currentTask.id);
-        }
-        closeTimer();
-      }
-      
-      function updateTimerDisplay() {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        document.getElementById('timerDisplay').textContent = 
-          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
-      
-      // 📢 通知系統
-      function showNotification(message) {
-        // 簡單的通知，你可以後續改成更美觀的
-        const notification = document.createElement('div');
-        notification.textContent = message;
-        notification.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: var(--success);
-          color: white;
-          padding: 12px 16px;
-          border-radius: 8px;
-          z-index: 1001;
-          animation: slideDown 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-          notification.style.animation = 'fadeOut 0.3s ease forwards';
-          setTimeout(() => notification.remove(), 300);
-        }, 2000);
-      }
-    </script>
-  </body>
-</html>
