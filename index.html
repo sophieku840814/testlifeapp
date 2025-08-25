@@ -1,115 +1,4 @@
-// 📊 分析儀表板 (開發用)
-      function showAnalytics() {
-        const retention = calculateRetention();
-        const events = JSON.parse(localStorage.getItem('p-person-events') || '[]');
-        const feedback = JSON.parse(localStorage.getItem('p-person-feedback') || 'null');
-        
-        const taskCreatedEvents = events.filter(e => e.eventName === 'task_created');
-        const timerStartedEvents = events.filter(e => e.eventName === 'timer_started');
-        const completedEvents = events.filter(e => e.eventName === 'task_completed');
-        const progressEvents = events.filter(e => e.eventName.includes('progress'));
-        
-        const analyticsHtml = `
-          <div style="font-size: var(--font-sm); line-height: 1.8;">
-            <h4>👤 用戶資訊</h4>
-            <p><strong>用戶ID:</strong> ${analytics.userId}</p>
-            <p><strong>首次造訪:</strong> ${new Date(analytics.userProfile.firstVisit).toLocaleString()}</p>
-            <p><strong>總會話數:</strong> ${analytics.userProfile.totalSessions}</p>
-            <p><strong>留存天數:</strong> ${retention.daysSinceFirstVisit} 天</p>
-            
-            <h4>📈 關鍵指標</h4>
-            <p><strong>啟動率:</strong> ${taskCreatedEvents.length > 0 ? '✅ 已啟動' : '❌ 未啟動'}</p>
-            <p><strong>任務創建數:</strong> ${taskCreatedEvents.length}</p>
-            <p><strong>計時器使用次數:</strong> ${timerStartedEvents.length}</p>
-            <p><strong>任務完成數:</strong> ${completedEvents.length}</p>
-            <p><strong>部分完成次數:</strong> ${progressEvents.length}</p>
-            
-            <h4>💬 用戶回饋</h4>
-            ${feedback ? `
-              <p><strong>滿意度:</strong> ${feedback.satisfaction === 'love' ? '😍 很喜歡' : feedback.satisfaction === 'okay' ? '😐 還可以' : '😞 不適合'}</p>
-              <p><strong>意見:</strong> ${feedback.comment || '無'}</p>
-            ` : '<p>尚未收集到回饋</p>'}
-            
-            <h4>🎯 使用模式</h4>
-            <p><strong>最常用功能:</strong> ${getMostUsedFeature(events)}</p>
-            <p><strong>平均每日任務:</strong> ${(taskCreatedEvents.length / Math.max(retention.daysSinceFirstVisit || 1, 1)).toFixed(1)}</p>
-          </div>
-        `;
-        
-        document.getElementById('analyticsContent').innerHTML = analyticsHtml;
-        document.getElementById('analyticsModal').classList.add('active');
-      }
-
-      function getMostUsedFeature(events) {
-        const featureCounts = {
-          'task_creation': events.filter(e => e.eventName === 'task_created').length,
-          'timer_usage': events.filter(e => e.eventName === 'timer_started').length,
-          'task_completion': events.filter(e => e.eventName.includes('completed')).length
-        };
-        
-        const maxFeature = Object.keys(featureCounts).reduce((a, b) => 
-          featureCounts[a] > featureCounts[b] ? a : b
-        );
-        
-        const featureNames = {
-          'task_creation': '建立任務',
-          'timer_usage': '計時器',
-          'task_completion': '完成任務'
-        };
-        
-        return featureNames[maxFeature] || '尚無數據';
-      }
-
-      function closeAnalytics() {
-        document.getElementById('analyticsModal').classList.remove('active');
-      }
-
-      function exportData() {
-        const exportData = {
-          userId: analytics.userId,
-          userProfile: analytics.userProfile,
-          events: JSON.parse(localStorage.getItem('p-person-events') || '[]'),
-          feedback: JSON.parse(localStorage.getItem('p-person-feedback') || 'null'),
-          tasks: tasks,
-          exportTime: new Date().toISOString()
-        };
-        
-        const dataStr = JSON.stringify(exportData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(dataBlob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `p-person-data-${analytics.userId}-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        
-        URL.revokeObjectURL(url);
-        showNotification('數據已匯出 📋');
-        trackEvent('data_exported');
-      }
-
-      // 🎯 快捷鍵和彩蛋
-      function handleStatsClick() {
-        statsClickCount++;
-        if (statsClickCount >= 3) {
-          showAnalytics();
-          statsClickCount = 0; // 重置
-        }
-      }
-
-      document.addEventListener('keydown', function(e) {
-        // Ctrl + Shift + A = 顯示分析面板
-        if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-          e.preventDefault();
-          showAnalytics();
-        }
-        
-        // Ctrl + Shift + F = 強制顯示回饋面板
-        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-          e.preventDefault();
-          showFeedbackPrompt();
-        }
-      });<!doctype html>
+<!doctype html>
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8">
@@ -125,10 +14,8 @@
       
       // 🔧 請替換成你的 GA4 測量 ID
       gtag('config', 'GA_MEASUREMENT_ID', {
-        // 自訂配置
         send_page_view: true,
         anonymize_ip: true,
-        // 設定自訂維度和指標
         custom_map: {
           'custom_parameter_1': 'user_type',
           'custom_parameter_2': 'task_category'
@@ -137,20 +24,16 @@
       
       // 🎯 P人專用事件追蹤函數
       function trackToGA4(eventName, eventData = {}) {
-        // 清理和標準化事件數據
         const cleanedData = {};
         
-        // 只保留 GA4 支援的參數格式
         Object.keys(eventData).forEach(key => {
           const value = eventData[key];
           if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-            // 轉換參數名為 GA4 格式（小寫+底線）
             const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '_');
             cleanedData[cleanKey] = value;
           }
         });
         
-        // 發送到 GA4
         gtag('event', eventName, {
           event_category: 'P人任務助手',
           ...cleanedData
@@ -166,39 +49,39 @@
         color-scheme: light dark;
         
         /* 🎯 主題色彩 */
-        --primary: #6366f1;        /* 靛藍 - 主要按鈕 */
-        --secondary: #ec4899;      /* 粉紅 - 強調元素 */
-        --success: #10b981;        /* 綠色 - 完成狀態 */
-        --warning: #f59e0b;        /* 橘色 - 進行中 */
-        --danger: #ef4444;         /* 紅色 - 刪除 */
+        --primary: #6366f1;        
+        --secondary: #ec4899;      
+        --success: #10b981;        
+        --warning: #f59e0b;        
+        --danger: #ef4444;         
         
         /* 🌈 中性色彩 */
-        --bg-primary: #ffffff;     /* 主背景 */
-        --bg-secondary: #f8fafc;   /* 次要背景 */
-        --bg-tertiary: #e2e8f0;    /* 第三層背景 */
-        --text-primary: #1e293b;   /* 主要文字 */
-        --text-secondary: #64748b; /* 次要文字 */
-        --text-muted: #94a3b8;     /* 提示文字 */
-        --border: #e2e8f0;         /* 邊框 */
+        --bg-primary: #ffffff;     
+        --bg-secondary: #f8fafc;   
+        --bg-tertiary: #e2e8f0;    
+        --text-primary: #1e293b;   
+        --text-secondary: #64748b; 
+        --text-muted: #94a3b8;     
+        --border: #e2e8f0;         
         --shadow: rgba(0, 0, 0, 0.1);
         
         /* 📏 尺寸系統 */
-        --space-xs: 0.25rem;  /* 4px */
-        --space-sm: 0.5rem;   /* 8px */
-        --space-md: 1rem;     /* 16px */
-        --space-lg: 1.5rem;   /* 24px */
-        --space-xl: 2rem;     /* 32px */
-        --space-2xl: 3rem;    /* 48px */
+        --space-xs: 0.25rem;  
+        --space-sm: 0.5rem;   
+        --space-md: 1rem;     
+        --space-lg: 1.5rem;   
+        --space-xl: 2rem;     
+        --space-2xl: 3rem;    
         
-        --radius-sm: 0.375rem; /* 6px */
-        --radius-md: 0.5rem;   /* 8px */
-        --radius-lg: 1rem;     /* 16px */
+        --radius-sm: 0.375rem; 
+        --radius-md: 0.5rem;   
+        --radius-lg: 1rem;     
         
-        --font-sm: 0.875rem;   /* 14px */
-        --font-base: 1rem;     /* 16px */
-        --font-lg: 1.125rem;   /* 18px */
-        --font-xl: 1.25rem;    /* 20px */
-        --font-2xl: 1.5rem;    /* 24px */
+        --font-sm: 0.875rem;   
+        --font-base: 1rem;     
+        --font-lg: 1.125rem;   
+        --font-xl: 1.25rem;    
+        --font-2xl: 1.5rem;    
       }
       
       /* 🌙 深色模式 */
@@ -625,6 +508,28 @@
       .celebration {
         animation: celebrate 0.5s ease-in-out;
       }
+
+      /* 💬 通知系統 */
+      .notification {
+        position: fixed;
+        top: var(--space-lg);
+        right: var(--space-lg);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: var(--space-md) var(--space-lg);
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px var(--shadow);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        border-left: 4px solid var(--success);
+      }
+
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
     </style>
   </head>
   <body>
@@ -633,9 +538,6 @@
       <header class="header">
         <h1>P 人任務助手</h1>
         <p>低壓力 • 好上手 • 專為拖延症設計</p>
-        <!-- 隱藏的統計入口，點擊3次顯示 -->
-        <div style="position: absolute; top: 10px; right: 10px; opacity: 0.3; cursor: pointer;" 
-             onclick="handleStatsClick()" id="statsEntry">📊</div>
       </header>
       
       <!-- 📝 主要內容 -->
@@ -764,37 +666,31 @@
       </div>
     </div>
 
-    <!-- 📊 分析儀表板模態框 (開發用) -->
-    <div class="modal" id="analyticsModal">
-      <div class="modal-content" style="max-width: 500px; text-align: left;">
-        <h3>📊 使用統計 (開發者模式)</h3>
-        <div id="analyticsContent">
-          <!-- 內容會由 JavaScript 動態生成 -->
-        </div>
-        <div style="text-align: center; margin-top: var(--space-lg);">
-          <button class="btn btn-secondary" onclick="closeAnalytics()">關閉</button>
-          <button class="btn btn-primary" onclick="exportData()">匯出資料</button>
-        </div>
-      </div>
-    </div>
-
     <script>
       // 🗂️ 資料結構
       let tasks = {
-        inbox: [],      // 收件匣任務
-        today: [],      // 今日任務 (包含未完成和已完成)
-        completed: []   // 今日已完成任務 (分開儲存以便管理)
+        inbox: [],      
+        today: [],      
+        completed: []   
       };
       
       let timerInterval = null;
       let currentTask = null;
-      let timeLeft = 1500; // 25分鐘 = 1500秒
+      let timeLeft = 1500; 
       let completedExpanded = false;
-      let statsClickCount = 0;
       
+      // 📊 用戶分析數據
+      let analytics = {
+        userId: null,
+        userProfile: {
+          firstVisit: null,
+          totalSessions: 0,
+          totalTasksCreated: 0
+        }
+      };
+
       // 💾 本地儲存功能
       function saveData() {
-        // 合併已完成任務到 today 陣列中，保持向下相容
         const allTodayTasks = [...tasks.today, ...tasks.completed];
         const dataToSave = {
           inbox: tasks.inbox,
@@ -808,13 +704,70 @@
         if (saved) {
           const data = JSON.parse(saved);
           
-          // 分離已完成和未完成任務
           tasks.inbox = data.inbox || [];
           const allTodayTasks = data.today || [];
           
           tasks.today = allTodayTasks.filter(t => t.status !== 'completed');
           tasks.completed = allTodayTasks.filter(t => t.status === 'completed');
         }
+      }
+
+      // 🎯 分析功能初始化
+      function initAnalytics() {
+        let userId = localStorage.getItem('p-person-userId');
+        if (!userId) {
+          userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('p-person-userId', userId);
+          
+          analytics.userProfile.firstVisit = new Date().toISOString();
+          localStorage.setItem('p-person-profile', JSON.stringify(analytics.userProfile));
+        } else {
+          const profile = localStorage.getItem('p-person-profile');
+          if (profile) {
+            analytics.userProfile = JSON.parse(profile);
+          }
+        }
+        
+        analytics.userId = userId;
+        analytics.userProfile.totalSessions += 1;
+        saveUserProfile();
+        
+        trackEvent('session_start', {
+          userId: analytics.userId,
+          sessionNumber: analytics.userProfile.totalSessions
+        });
+      }
+
+      function saveUserProfile() {
+        localStorage.setItem('p-person-profile', JSON.stringify(analytics.userProfile));
+      }
+
+      function trackEvent(eventName, eventData = {}) {
+        const eventRecord = {
+          eventName,
+          eventData,
+          timestamp: new Date().toISOString(),
+          userId: analytics.userId
+        };
+        
+        const events = JSON.parse(localStorage.getItem('p-person-events') || '[]');
+        events.push(eventRecord);
+        localStorage.setItem('p-person-events', JSON.stringify(events));
+        
+        if (typeof trackToGA4 === 'function') {
+          trackToGA4(eventName, eventData);
+        }
+      }
+
+      function calculateRetention() {
+        const firstVisit = new Date(analytics.userProfile.firstVisit);
+        const now = new Date();
+        const daysSinceFirstVisit = Math.floor((now - firstVisit) / (1000 * 60 * 60 * 24));
+        
+        return {
+          daysSinceFirstVisit,
+          isReturnUser: daysSinceFirstVisit > 0 || analytics.userProfile.totalSessions > 1
+        };
       }
       
       // 🏗️ 初始化
@@ -824,18 +777,15 @@
         renderTasks();
         updateCounters();
         
-        // 檢查是否為回訪用戶
         const retention = calculateRetention();
         if (retention.isReturnUser) {
           trackEvent('return_visit', retention);
           
-          // Day 7+ 用戶顯示回饋收集
           if (retention.daysSinceFirstVisit >= 7) {
-            setTimeout(showFeedbackPrompt, 8000); // 8秒後顯示，給用戶更多時間使用
+            setTimeout(showFeedbackPrompt, 8000);
           }
         }
         
-        // Enter 鍵快速新增
         document.getElementById('ideaInput').addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
             addIdea();
@@ -850,45 +800,32 @@
         
         if (!text) return;
         
-        // 建立新任務
         const newTask = {
           id: Date.now(),
           text: text,
-          status: 'todo',      // todo, in-progress, completed
+          status: 'todo',
           createdAt: new Date().toISOString(),
-          location: 'inbox'    // inbox, today
+          location: 'inbox'
         };
         
-        tasks.inbox.unshift(newTask); // 加到最前面
+        tasks.inbox.unshift(newTask);
         input.value = '';
         
-        // 📊 追蹤啟動率指標 (GA4: 第一個任務創建視為轉換)
         analytics.userProfile.totalTasksCreated += 1;
         saveUserProfile();
         
         const isFirstTask = analytics.userProfile.totalTasksCreated === 1;
         
         trackEvent('task_created', { 
-          task_text: text.substring(0, 50), // 只記錄前50字
+          task_text: text.substring(0, 50),
           location: 'inbox',
           total_tasks: analytics.userProfile.totalTasksCreated,
           is_first_task: isFirstTask
         });
         
-        // GA4: 第一個任務視為啟動轉換
-        if (isFirstTask && typeof gtag !== 'undefined') {
-          gtag('event', 'conversion', {
-            event_category: 'engagement',
-            event_label: 'first_task_created',
-            value: 1
-          });
-        }
-        
         saveData();
         renderTasks();
         updateCounters();
-        
-        // 顯示成功動畫
         showNotification('想法已收錄！ ✨');
       }
       
@@ -920,11 +857,9 @@
         const task = tasks.today.find(t => t.id === taskId);
         if (!task) return;
         
-        // 顯示確認對話框
         const userChoice = confirm('開始 25 分鐘專注模式？\n\n確定 = 開啟專注計時器 ⏰\n取消 = 不進行，保持待開始狀態');
         
         if (userChoice) {
-          // 50分鐘專注模式
           currentTask = task;
           trackEvent('timer_requested', { taskId: taskId });
           openTimer(task);
@@ -942,28 +877,17 @@
           task.completedAt = new Date().toISOString();
           tasks.completed.push(task);
           
-          // 📊 追蹤完成指標 (GA4: 任務完成視為目標達成)
           trackEvent('task_completed', { 
             task_id: taskId, 
             was_in_progress: task.status === 'in-progress',
             total_completed_today: tasks.completed.length
           });
           
-          // GA4: 任務完成事件
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'level_up', {
-              event_category: 'engagement', 
-              level_name: `${tasks.completed.length}_tasks_completed`,
-              character: 'p_person_user'
-            });
-          }
-          
           saveData();
           renderTasks();
           updateCounters();
           showNotification('太棒了！任務完成 🎉');
           
-          // 如果沒有未完成任務，顯示慶祝動畫
           if (tasks.today.length === 0) {
             setTimeout(() => {
               showNotification('今日任務全部完成！你太棒了！ 🎊');
@@ -1022,13 +946,10 @@
         renderTaskList('completedTasks', tasks.completed, 'completed');
         renderTaskList('inboxTasks', tasks.inbox, 'inbox');
         
-        // 顯示空狀態
         document.getElementById('emptyState').style.display = 
           tasks.today.length === 0 ? 'block' : 'none';
         document.getElementById('inboxEmpty').style.display = 
           tasks.inbox.length === 0 ? 'block' : 'none';
-
-        // 顯示已完成區塊
         document.getElementById('completedSection').style.display = 
           tasks.completed.length > 0 ? 'block' : 'none';
       }
@@ -1094,3 +1015,1411 @@
           container.appendChild(li);
         });
       }
+
+      // 📊 更新計數器
+      function updateCounters() {
+        const taskCounter = document.getElementById('taskCounter');
+        const completedCount = document.getElementById('completedCount');
+        
+        if (taskCounter) {
+          taskCounter.textContent = `(${tasks.today.length}/3)`;
+        }
+        
+        if (completedCount) {
+          completedCount.textContent = `(${tasks.completed.length})`;
+        }
+      }
+
+      // ⏰ 計時器功能
+      function openTimer(task) {
+        document.getElementById('timerModal').classList.add('active');
+        document.getElementById('timerTaskName').textContent = task.text;
+        document.getElementById('timerDisplay').textContent = '25:00';
+        timeLeft = 1500;
+        
+        task.status = 'in-progress';
+        saveData();
+        renderTasks();
+        updateCounters();
+      }
+
+      function startTimer() {
+        trackEvent('timer_started', { 
+          taskId: currentTask.id,
+          taskText: currentTask.text.substring(0, 50)
+        });
+        
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerControls = document.getElementById('timerControls');
+        
+        timerControls.innerHTML = `
+          <button class="btn btn-warning" onclick="pauseTimer()">暫停</button>
+          <button class="btn btn-secondary" onclick="stopTimer()">停止</button>
+        `;
+        
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          if (timeLeft <= 0) {
+            completeTimer();
+          }
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        const timerControls = document.getElementById('timerControls');
+        timerControls.innerHTML = `
+          <button class="btn btn-primary" onclick="resumeTimer()">繼續</button>
+          <button class="btn btn-secondary" onclick="stopTimer()">停止</button>
+        `;
+        
+        trackEvent('timer_paused', { remainingTime: timeLeft });
+      }
+
+      function resumeTimer() {
+        startTimer();
+        trackEvent('timer_resumed', { remainingTime: timeLeft });
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        trackEvent('timer_stopped', { 
+          timeSpent: 1500 - timeLeft,
+          remainingTime: timeLeft 
+        });
+        
+        closeTimer();
+      }
+
+      function completeTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        trackEvent('timer_completed', { 
+          taskId: currentTask.id,
+          fullDuration: 1500
+        });
+        
+        showNotification('🎉 25分鐘專注時間完成！太棒了！');
+        
+        setTimeout(() => {
+          const shouldComplete = confirm('太棒了！25分鐘專注完成 🎉\n\n要標記這個任務為完成嗎？');
+          if (shouldComplete) {
+            completeTask(currentTask.id);
+          }
+          closeTimer();
+        }, 1000);
+      }
+
+      function closeTimer() {
+        document.getElementById('timerModal').classList.remove('active');
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        currentTask = null;
+      }
+
+      // 💬 通知系統
+      function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        
+        if (type === 'error') {
+          notification.style.borderLeftColor = 'var(--danger)';
+        } else if (type === 'warning') {
+          notification.style.borderLeftColor = 'var(--warning)';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => document.body.removeChild(notification), 300);
+        }, 3000);
+      }
+
+      // 📝 用戶回饋功能
+      function showFeedbackPrompt() {
+        const hasShownFeedback = localStorage.getItem('p-person-feedback-shown');
+        if (hasShownFeedback) return;
+        
+        document.getElementById('feedbackModal').classList.add('active');
+        localStorage.setItem('p-person-feedback-shown', 'true');
+        trackEvent('feedback_prompt_shown');
+      }
+
+      function handleSatisfactionChange(radio) {
+        const followUp = document.getElementById('followUpQuestion');
+        const title = document.getElementById('followUpTitle');
+        
+        followUp.style.display = 'block';
+        
+        if (radio.value === 'love') {
+          title.textContent = '太好了！什麼地方最吸引您？';
+        } else if (radio.value === 'okay') {
+          title.textContent = '謝謝反饋！哪些地方可以改進？';
+        } else {
+          title.textContent = '謝謝您的誠實！能告訴我們原因嗎？';
+        }
+      }
+
+      function submitFeedback() {
+        const satisfaction = document.querySelector('input[name="satisfaction"]:checked')?.value;
+        const comment = document.getElementById('feedbackText').value.trim();
+        
+        if (!satisfaction) {
+          showNotification('請選擇您的感受', 'warning');
+          return;
+        }
+        
+        const feedback = {
+          satisfaction,
+          comment,
+          timestamp: new Date().toISOString(),
+          userId: analytics.userId,
+          userProfile: analytics.userProfile
+        };
+        
+        localStorage.setItem('p-person-feedback', JSON.stringify(feedback));
+        
+        trackEvent('feedback_submitted', {
+          satisfaction,
+          hasComment: comment.length > 0,
+          commentLength: comment.length
+        });
+        
+        showNotification('謝謝您的回饋！ 🙏');
+        closeFeedback();
+      }
+
+      function closeFeedback() {
+        document.getElementById('feedbackModal').classList.remove('active');
+        trackEvent('feedback_closed');
+      }
+    </script>
+  </body>
+</html><!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>P 人任務助手</title>
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      // 🔧 請替換成你的 GA4 測量 ID
+      gtag('config', 'GA_MEASUREMENT_ID', {
+        send_page_view: true,
+        anonymize_ip: true,
+        custom_map: {
+          'custom_parameter_1': 'user_type',
+          'custom_parameter_2': 'task_category'
+        }
+      });
+      
+      // 🎯 P人專用事件追蹤函數
+      function trackToGA4(eventName, eventData = {}) {
+        const cleanedData = {};
+        
+        Object.keys(eventData).forEach(key => {
+          const value = eventData[key];
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            cleanedData[cleanKey] = value;
+          }
+        });
+        
+        gtag('event', eventName, {
+          event_category: 'P人任務助手',
+          ...cleanedData
+        });
+        
+        console.log('🔍 GA4 Event:', eventName, cleanedData);
+      }
+    </script>
+    
+    <style>
+      /* 🎨 CSS 變數系統 */
+      :root { 
+        color-scheme: light dark;
+        
+        /* 🎯 主題色彩 */
+        --primary: #6366f1;        
+        --secondary: #ec4899;      
+        --success: #10b981;        
+        --warning: #f59e0b;        
+        --danger: #ef4444;         
+        
+        /* 🌈 中性色彩 */
+        --bg-primary: #ffffff;     
+        --bg-secondary: #f8fafc;   
+        --bg-tertiary: #e2e8f0;    
+        --text-primary: #1e293b;   
+        --text-secondary: #64748b; 
+        --text-muted: #94a3b8;     
+        --border: #e2e8f0;         
+        --shadow: rgba(0, 0, 0, 0.1);
+        
+        /* 📏 尺寸系統 */
+        --space-xs: 0.25rem;  
+        --space-sm: 0.5rem;   
+        --space-md: 1rem;     
+        --space-lg: 1.5rem;   
+        --space-xl: 2rem;     
+        --space-2xl: 3rem;    
+        
+        --radius-sm: 0.375rem; 
+        --radius-md: 0.5rem;   
+        --radius-lg: 1rem;     
+        
+        --font-sm: 0.875rem;   
+        --font-base: 1rem;     
+        --font-lg: 1.125rem;   
+        --font-xl: 1.25rem;    
+        --font-2xl: 1.5rem;    
+      }
+      
+      /* 🌙 深色模式 */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-primary: #0f172a;
+          --bg-secondary: #1e293b;
+          --bg-tertiary: #334155;
+          --text-primary: #f1f5f9;
+          --text-secondary: #cbd5e1;
+          --text-muted: #64748b;
+          --border: #334155;
+          --shadow: rgba(0, 0, 0, 0.3);
+        }
+      }
+      
+      /* 🔄 基礎重置 */
+      * {
+        box-sizing: border-box;
+      }
+      
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      
+      body {
+        font-family: 
+          "SF Pro Display", -apple-system, "Segoe UI", 
+          "Noto Sans TC", "PingFang TC", "Microsoft JhengHei",
+          system-ui, sans-serif;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      /* 📱 整體佈局結構 */
+      .app-container {
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100vh;
+        background-color: var(--bg-primary);
+        box-shadow: 0 0 20px var(--shadow);
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* 🎯 Header 區域 */
+      .header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: var(--space-lg) var(--space-md) var(--space-xl);
+        text-align: center;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      }
+      
+      .header h1 {
+        margin: 0 0 var(--space-sm);
+        font-size: var(--font-2xl);
+        font-weight: 700;
+        animation: slideDown 0.6s ease-out;
+      }
+      
+      .header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: var(--font-sm);
+        animation: fadeIn 0.8s ease-out 0.2s both;
+      }
+      
+      /* 📝 主要內容區 */
+      .main-content {
+        flex: 1;
+        padding: var(--space-lg) var(--space-md);
+      }
+      
+      .section {
+        margin-bottom: var(--space-xl);
+      }
+      
+      .section-title {
+        font-size: var(--font-lg);
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 var(--space-md);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      
+      /* 💡 收件匣輸入區 */
+      .inbox-input {
+        position: relative;
+        margin-bottom: var(--space-lg);
+      }
+      
+      .inbox-input input {
+        width: 100%;
+        padding: var(--space-md);
+        border: 2px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-base);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+      
+      .inbox-input input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+      
+      .inbox-input input::placeholder {
+        color: var(--text-muted);
+      }
+      
+      .add-btn {
+        position: absolute;
+        right: var(--space-sm);
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--primary);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: var(--font-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+      
+      .add-btn:hover {
+        background: #4f46e5;
+        transform: translateY(-50%) scale(1.05);
+      }
+      
+      /* ✅ 今日任務清單 */
+      .task-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .task-item {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-sm);
+        padding: var(--space-md);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        animation: slideUp 0.4s ease-out;
+      }
+      
+      .task-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        transform: translateY(-1px);
+      }
+      
+      .task-item.completed {
+        opacity: 0.6;
+        text-decoration: line-through;
+        border-color: var(--success);
+        background-color: rgba(16, 185, 129, 0.05);
+      }
+      
+      .task-item.in-progress {
+        border-color: var(--warning);
+        background-color: rgba(245, 158, 11, 0.05);
+        border-left: 4px solid var(--warning);
+      }
+      
+      .task-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .task-text {
+        font-size: var(--font-base);
+        margin: 0;
+      }
+      
+      .task-status {
+        font-size: var(--font-sm);
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+      }
+      
+      .status-todo {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+      }
+      
+      .status-progress {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+      }
+      
+      .status-done {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+      }
+
+      /* 📋 已完成任務區塊 */
+      .completed-section {
+        margin-top: var(--space-lg);
+        border-top: 1px solid var(--border);
+        padding-top: var(--space-md);
+      }
+
+      .completed-toggle {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: var(--font-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) 0;
+        transition: color 0.2s ease;
+      }
+
+      .completed-toggle:hover {
+        color: var(--text-secondary);
+      }
+
+      .completed-list {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .completed-list.expanded {
+        max-height: 500px;
+      }
+      
+      /* ⏰ 計時器模態框 */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+      }
+      
+      .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .modal-content {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-2xl);
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        max-width: 350px;
+        width: 90%;
+        animation: scaleIn 0.3s ease 0.1s both;
+      }
+      
+      .timer-display {
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin: var(--space-md) 0;
+        font-variant-numeric: tabular-nums;
+      }
+      
+      .timer-controls {
+        display: flex;
+        gap: var(--space-sm);
+        justify-content: center;
+        margin-top: var(--space-lg);
+        flex-wrap: wrap;
+      }
+
+      .timer-task-name {
+        background: var(--bg-secondary);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        margin: var(--space-md) 0;
+        font-size: var(--font-sm);
+        color: var(--text-secondary);
+      }
+      
+      /* 🔘 按鈕系統 */
+      .btn {
+        padding: var(--space-sm) var(--space-md);
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: var(--font-base);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+      }
+      
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+      }
+      
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+      
+      .btn-secondary:hover {
+        background: #cbd5e1;
+      }
+      
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      .btn-warning {
+        background: var(--warning);
+        color: white;
+      }
+      
+      .btn-warning:hover {
+        background: #d97706;
+      }
+      
+      /* 📱 響應式設計 */
+      @media (max-width: 640px) {
+        .app-container {
+          box-shadow: none;
+        }
+        
+        .header {
+          border-radius: 0;
+        }
+        
+        .main-content {
+          padding: var(--space-md);
+        }
+        
+        .timer-display {
+          font-size: 2.5rem;
+        }
+
+        .timer-controls {
+          flex-direction: column;
+        }
+      }
+      
+      /* 🎭 動畫效果 */
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      /* 🎯 空狀態 */
+      .empty-state {
+        text-align: center;
+        padding: var(--space-2xl);
+        color: var(--text-muted);
+      }
+      
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: var(--space-md);
+        opacity: 0.5;
+      }
+
+      /* 🎊 慶祝動畫 */
+      @keyframes celebrate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+
+      .celebration {
+        animation: celebrate 0.5s ease-in-out;
+      }
+
+      /* 💬 通知系統 */
+      .notification {
+        position: fixed;
+        top: var(--space-lg);
+        right: var(--space-lg);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: var(--space-md) var(--space-lg);
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px var(--shadow);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        border-left: 4px solid var(--success);
+      }
+
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- 🎯 Header 區域 -->
+      <header class="header">
+        <h1>P 人任務助手</h1>
+        <p>低壓力 • 好上手 • 專為拖延症設計</p>
+      </header>
+      
+      <!-- 📝 主要內容 -->
+      <main class="main-content">
+        <!-- 💡 靈感收件匣 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>💡</span>
+            丟想法 (隨時記錄)
+          </h2>
+          <div class="inbox-input">
+            <input 
+              type="text" 
+              id="ideaInput" 
+              placeholder="有什麼想法就丟進來..." 
+              maxlength="100"
+            >
+            <button class="add-btn" onclick="addIdea()">+</button>
+          </div>
+        </section>
+        
+        <!-- ✅ 今日任務 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>✅</span>
+            今日清單 (同時進行最多 3 件事)
+            <span id="taskCounter" style="color: var(--text-muted); font-size: var(--font-sm);">(0/3)</span>
+          </h2>
+          
+          <ul class="task-list" id="todayTasks">
+            <!-- 未完成任務會顯示在這裡 -->
+          </ul>
+          
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">🎯</div>
+            <p>還沒有今日任務<br>從上方輸入框新增想法開始吧！</p>
+          </div>
+
+          <!-- 📋 已完成任務區塊 -->
+          <div class="completed-section" id="completedSection" style="display: none;">
+            <button class="completed-toggle" onclick="toggleCompleted()">
+              <span id="completedIcon">👇</span>
+              <span id="completedText">顯示已完成任務</span>
+              <span id="completedCount">(0)</span>
+            </button>
+            <ul class="task-list completed-list" id="completedTasks">
+              <!-- 已完成任務會顯示在這裡 -->
+            </ul>
+          </div>
+        </section>
+        
+        <!-- 📦 收件匣 -->
+        <section class="section">
+          <h2 class="section-title">
+            <span>📦</span>
+            收件匣 (待整理)
+          </h2>
+          <ul class="task-list" id="inboxTasks">
+            <!-- 收件匣項目 -->
+          </ul>
+          
+          <div class="empty-state" id="inboxEmpty">
+            <div class="empty-state-icon">📝</div>
+            <p>收件匣是空的<br>很棒，保持這個狀態！</p>
+          </div>
+        </section>
+      </main>
+    </div>
+    
+    <!-- ⏰ 25分鐘計時器模態框 -->
+    <div class="modal" id="timerModal">
+      <div class="modal-content">
+        <h3 id="timerTitle">25 分鐘專注模式 🍅</h3>
+        <div class="timer-task-name" id="timerTaskName">準備開始...</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-controls" id="timerControls">
+          <button class="btn btn-primary" onclick="startTimer()">開始專注</button>
+          <button class="btn btn-secondary" onclick="closeTimer()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📝 用戶回饋模態框 -->
+    <div class="modal" id="feedbackModal">
+      <div class="modal-content">
+        <h3>🤔 幫助我們改進！</h3>
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">
+          您已經使用 P 人任務助手一週了，想聽聽您的想法！
+        </p>
+        
+        <div style="text-align: left; margin-bottom: var(--space-lg);">
+          <div style="margin-bottom: var(--space-md);">
+            <strong>您覺得這個工具如何？</strong>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="love" onchange="handleSatisfactionChange(this)">
+              <span>😍 很喜歡！對我很有用</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="okay" onchange="handleSatisfactionChange(this)">
+              <span>😐 還可以，但有些地方可以改進</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--space-sm);">
+              <input type="radio" name="satisfaction" value="not_useful" onchange="handleSatisfactionChange(this)">
+              <span>😞 不太適合我</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="followUpQuestion" style="display: none; text-align: left; margin-bottom: var(--space-lg);">
+          <div style="margin-bottom: var(--space-sm);">
+            <strong id="followUpTitle">為什麼呢？</strong>
+          </div>
+          <textarea 
+            id="feedbackText" 
+            placeholder="請分享您的想法..." 
+            style="width: 100%; min-height: 80px; padding: var(--space-sm); border: 1px solid var(--border); border-radius: var(--radius-sm); resize: vertical;"
+          ></textarea>
+        </div>
+        
+        <div class="timer-controls">
+          <button class="btn btn-primary" onclick="submitFeedback()">送出回饋</button>
+          <button class="btn btn-secondary" onclick="closeFeedback()">稍後再說</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 🗂️ 資料結構
+      let tasks = {
+        inbox: [],      
+        today: [],      
+        completed: []   
+      };
+      
+      let timerInterval = null;
+      let currentTask = null;
+      let timeLeft = 1500; 
+      let completedExpanded = false;
+      
+      // 📊 用戶分析數據
+      let analytics = {
+        userId: null,
+        userProfile: {
+          firstVisit: null,
+          totalSessions: 0,
+          totalTasksCreated: 0
+        }
+      };
+
+      // 💾 本地儲存功能
+      function saveData() {
+        const allTodayTasks = [...tasks.today, ...tasks.completed];
+        const dataToSave = {
+          inbox: tasks.inbox,
+          today: allTodayTasks
+        };
+        localStorage.setItem('p-person-tasks', JSON.stringify(dataToSave));
+      }
+      
+      function loadData() {
+        const saved = localStorage.getItem('p-person-tasks');
+        if (saved) {
+          const data = JSON.parse(saved);
+          
+          tasks.inbox = data.inbox || [];
+          const allTodayTasks = data.today || [];
+          
+          tasks.today = allTodayTasks.filter(t => t.status !== 'completed');
+          tasks.completed = allTodayTasks.filter(t => t.status === 'completed');
+        }
+      }
+
+      // 🎯 分析功能初始化
+      function initAnalytics() {
+        let userId = localStorage.getItem('p-person-userId');
+        if (!userId) {
+          userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('p-person-userId', userId);
+          
+          analytics.userProfile.firstVisit = new Date().toISOString();
+          localStorage.setItem('p-person-profile', JSON.stringify(analytics.userProfile));
+        } else {
+          const profile = localStorage.getItem('p-person-profile');
+          if (profile) {
+            analytics.userProfile = JSON.parse(profile);
+          }
+        }
+        
+        analytics.userId = userId;
+        analytics.userProfile.totalSessions += 1;
+        saveUserProfile();
+        
+        trackEvent('session_start', {
+          userId: analytics.userId,
+          sessionNumber: analytics.userProfile.totalSessions
+        });
+      }
+
+      function saveUserProfile() {
+        localStorage.setItem('p-person-profile', JSON.stringify(analytics.userProfile));
+      }
+
+      function trackEvent(eventName, eventData = {}) {
+        const eventRecord = {
+          eventName,
+          eventData,
+          timestamp: new Date().toISOString(),
+          userId: analytics.userId
+        };
+        
+        const events = JSON.parse(localStorage.getItem('p-person-events') || '[]');
+        events.push(eventRecord);
+        localStorage.setItem('p-person-events', JSON.stringify(events));
+        
+        if (typeof trackToGA4 === 'function') {
+          trackToGA4(eventName, eventData);
+        }
+      }
+
+      function calculateRetention() {
+        const firstVisit = new Date(analytics.userProfile.firstVisit);
+        const now = new Date();
+        const daysSinceFirstVisit = Math.floor((now - firstVisit) / (1000 * 60 * 60 * 24));
+        
+        return {
+          daysSinceFirstVisit,
+          isReturnUser: daysSinceFirstVisit > 0 || analytics.userProfile.totalSessions > 1
+        };
+      }
+      
+      // 🏗️ 初始化
+      document.addEventListener('DOMContentLoaded', function() {
+        initAnalytics();
+        loadData();
+        renderTasks();
+        updateCounters();
+        
+        const retention = calculateRetention();
+        if (retention.isReturnUser) {
+          trackEvent('return_visit', retention);
+          
+          if (retention.daysSinceFirstVisit >= 7) {
+            setTimeout(showFeedbackPrompt, 8000);
+          }
+        }
+        
+        document.getElementById('ideaInput').addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            addIdea();
+          }
+        });
+      });
+      
+      // ➕ 新增想法到收件匣
+      function addIdea() {
+        const input = document.getElementById('ideaInput');
+        const text = input.value.trim();
+        
+        if (!text) return;
+        
+        const newTask = {
+          id: Date.now(),
+          text: text,
+          status: 'todo',
+          createdAt: new Date().toISOString(),
+          location: 'inbox'
+        };
+        
+        tasks.inbox.unshift(newTask);
+        input.value = '';
+        
+        analytics.userProfile.totalTasksCreated += 1;
+        saveUserProfile();
+        
+        const isFirstTask = analytics.userProfile.totalTasksCreated === 1;
+        
+        trackEvent('task_created', { 
+          task_text: text.substring(0, 50),
+          location: 'inbox',
+          total_tasks: analytics.userProfile.totalTasksCreated,
+          is_first_task: isFirstTask
+        });
+        
+        saveData();
+        renderTasks();
+        updateCounters();
+        showNotification('想法已收錄！ ✨');
+      }
+      
+      // 🎯 移動任務到今日清單
+      function moveToToday(taskId) {
+        if (tasks.today.length >= 3) {
+          showNotification('今日清單已滿 (3/3)，請先完成一些任務 🙏');
+          trackEvent('move_to_today_failed', { reason: 'list_full' });
+          return;
+        }
+        
+        const taskIndex = tasks.inbox.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+          const task = tasks.inbox.splice(taskIndex, 1)[0];
+          task.location = 'today';
+          tasks.today.push(task);
+          
+          trackEvent('move_to_today', { taskId: taskId });
+          
+          saveData();
+          renderTasks();
+          updateCounters();
+          showNotification('已加入今日清單！ 🎯');
+        }
+      }
+      
+      // ⏰ 開始任務 (顯示選項)
+      function startTask(taskId) {
+        const task = tasks.today.find(t => t.id === taskId);
+        if (!task) return;
+        
+        const userChoice = confirm('開始 25 分鐘專注模式？\n\n確定 = 開啟專注計時器 ⏰\n取消 = 不進行，保持待開始狀態');
+        
+        if (userChoice) {
+          currentTask = task;
+          trackEvent('timer_requested', { taskId: taskId });
+          openTimer(task);
+        } else {
+          trackEvent('timer_cancelled', { taskId: taskId });
+        }
+      }
+      
+      // ✅ 完成任務
+      function completeTask(taskId) {
+        const todayIndex = tasks.today.findIndex(t => t.id === taskId);
+        if (todayIndex !== -1) {
+          const task = tasks.today.splice(todayIndex, 1)[0];
+          task.status = 'completed';
+          task.completedAt = new Date().toISOString();
+          tasks.completed.push(task);
+          
+          trackEvent('task_completed', { 
+            task_id: taskId, 
+            was_in_progress: task.status === 'in-progress',
+            total_completed_today: tasks.completed.length
+          });
+          
+          saveData();
+          renderTasks();
+          updateCounters();
+          showNotification('太棒了！任務完成 🎉');
+          
+          if (tasks.today.length === 0) {
+            setTimeout(() => {
+              showNotification('今日任務全部完成！你太棒了！ 🎊');
+              trackEvent('all_tasks_completed_today', { totalCompleted: tasks.completed.length });
+            }, 500);
+          }
+        }
+      }
+      
+      // 🗑️ 刪除任務
+      function deleteTask(taskId, location) {
+        if (location === 'today') {
+          const index = tasks.today.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.today.splice(index, 1);
+          }
+        } else if (location === 'completed') {
+          const index = tasks.completed.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.completed.splice(index, 1);
+          }
+        } else {
+          const index = tasks.inbox.findIndex(t => t.id === taskId);
+          if (index !== -1) {
+            tasks.inbox.splice(index, 1);
+          }
+        }
+        
+        saveData();
+        renderTasks();
+        updateCounters();
+        showNotification('任務已刪除');
+      }
+
+      // 📋 切換已完成任務顯示
+      function toggleCompleted() {
+        completedExpanded = !completedExpanded;
+        const completedList = document.getElementById('completedTasks');
+        const icon = document.getElementById('completedIcon');
+        const text = document.getElementById('completedText');
+        
+        if (completedExpanded) {
+          completedList.classList.add('expanded');
+          icon.textContent = '👆';
+          text.textContent = '隱藏已完成任務';
+        } else {
+          completedList.classList.remove('expanded');
+          icon.textContent = '👇';
+          text.textContent = '顯示已完成任務';
+        }
+      }
+      
+      // 🎨 渲染任務列表
+      function renderTasks() {
+        renderTaskList('todayTasks', tasks.today, 'today');
+        renderTaskList('completedTasks', tasks.completed, 'completed');
+        renderTaskList('inboxTasks', tasks.inbox, 'inbox');
+        
+        document.getElementById('emptyState').style.display = 
+          tasks.today.length === 0 ? 'block' : 'none';
+        document.getElementById('inboxEmpty').style.display = 
+          tasks.inbox.length === 0 ? 'block' : 'none';
+        document.getElementById('completedSection').style.display = 
+          tasks.completed.length > 0 ? 'block' : 'none';
+      }
+      
+      function renderTaskList(containerId, taskList, location) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        taskList.forEach(task => {
+          const li = document.createElement('li');
+          li.className = `task-item ${task.status === 'completed' ? 'completed' : ''} ${task.status === 'in-progress' ? 'in-progress' : ''}`;
+          
+          let statusBadge = '';
+          let actions = '';
+          
+          if (task.status === 'completed') {
+            statusBadge = '<span class="task-status status-done">已完成</span>';
+            actions = `
+              <button class="btn btn-secondary" onclick="deleteTask(${task.id}, 'completed')" style="padding: 4px 8px; font-size: 12px;">
+                🗑️
+              </button>
+            `;
+          } else if (task.status === 'in-progress') {
+            statusBadge = '<span class="task-status status-progress">進行中</span>';
+            actions = `
+              <button class="btn btn-success" onclick="completeTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                完成
+              </button>
+            `;
+          } else {
+            statusBadge = '<span class="task-status status-todo">待開始</span>';
+          }
+          
+          if (location === 'inbox') {
+            actions = `
+              <button class="btn btn-primary" onclick="moveToToday(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                → 今日
+              </button>
+              <button class="btn btn-secondary" onclick="deleteTask(${task.id}, 'inbox')" style="padding: 4px 8px; font-size: 12px;">
+                🗑️
+              </button>
+            `;
+          } else if (location === 'today' && task.status === 'todo') {
+            actions = `
+              <button class="btn btn-warning" onclick="startTask(${task.id})" style="padding: 4px 8px; font-size: 12px;">
+                開始
+              </button>
+            `;
+          }
+          
+          li.innerHTML = `
+            <div class="task-content">
+              <div>
+                <p class="task-text">${task.text}</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                ${statusBadge}
+                ${actions}
+              </div>
+            </div>
+          `;
+          
+          container.appendChild(li);
+        });
+      }
+
+      // 📊 更新計數器
+      function updateCounters() {
+        const taskCounter = document.getElementById('taskCounter');
+        const completedCount = document.getElementById('completedCount');
+        
+        if (taskCounter) {
+          taskCounter.textContent = `(${tasks.today.length}/3)`;
+        }
+        
+        if (completedCount) {
+          completedCount.textContent = `(${tasks.completed.length})`;
+        }
+      }
+
+      // ⏰ 計時器功能
+      function openTimer(task) {
+        document.getElementById('timerModal').classList.add('active');
+        document.getElementById('timerTaskName').textContent = task.text;
+        document.getElementById('timerDisplay').textContent = '25:00';
+        timeLeft = 1500;
+        
+        task.status = 'in-progress';
+        saveData();
+        renderTasks();
+        updateCounters();
+      }
+
+      function startTimer() {
+        trackEvent('timer_started', { 
+          taskId: currentTask.id,
+          taskText: currentTask.text.substring(0, 50)
+        });
+        
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerControls = document.getElementById('timerControls');
+        
+        timerControls.innerHTML = `
+          <button class="btn btn-warning" onclick="pauseTimer()">暫停</button>
+          <button class="btn btn-secondary" onclick="stopTimer()">停止</button>
+        `;
+        
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          if (timeLeft <= 0) {
+            completeTimer();
+          }
+        }, 1000);
+      }
+
+      function pauseTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        const timerControls = document.getElementById('timerControls');
+        timerControls.innerHTML = `
+          <button class="btn btn-primary" onclick="resumeTimer()">繼續</button>
+          <button class="btn btn-secondary" onclick="stopTimer()">停止</button>
+        `;
+        
+        trackEvent('timer_paused', { remainingTime: timeLeft });
+      }
+
+      function resumeTimer() {
+        startTimer();
+        trackEvent('timer_resumed', { remainingTime: timeLeft });
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        trackEvent('timer_stopped', { 
+          timeSpent: 1500 - timeLeft,
+          remainingTime: timeLeft 
+        });
+        
+        closeTimer();
+      }
+
+      function completeTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        trackEvent('timer_completed', { 
+          taskId: currentTask.id,
+          fullDuration: 1500
+        });
+        
+        showNotification('🎉 25分鐘專注時間完成！太棒了！');
+        
+        setTimeout(() => {
+          const shouldComplete = confirm('太棒了！25分鐘專注完成 🎉\n\n要標記這個任務為完成嗎？');
+          if (shouldComplete) {
+            completeTask(currentTask.id);
+          }
+          closeTimer();
+        }, 1000);
+      }
+
+      function closeTimer() {
+        document.getElementById('timerModal').classList.remove('active');
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        currentTask = null;
+      }
+
+      // 💬 通知系統
+      function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        
+        if (type === 'error') {
+          notification.style.borderLeftColor = 'var(--danger)';
+        } else if (type === 'warning') {
+          notification.style.borderLeftColor = 'var(--warning)';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => document.body.removeChild(notification), 300);
+        }, 3000);
+      }
+
+      // 📝 用戶回饋功能
+      function showFeedbackPrompt() {
+        const hasShownFeedback = localStorage.getItem('p-person-feedback-shown');
+        if (hasShownFeedback) return;
+        
+        document.getElementById('feedbackModal').classList.add('active');
+        localStorage.setItem('p-person-feedback-shown', 'true');
+        trackEvent('feedback_prompt_shown');
+      }
+
+      function handleSatisfactionChange(radio) {
+        const followUp = document.getElementById('followUpQuestion');
+        const title = document.getElementById('followUpTitle');
+        
+        followUp.style.display = 'block';
+        
+        if (radio.value === 'love') {
+          title.textContent = '太好了！什麼地方最吸引您？';
+        } else if (radio.value === 'okay') {
+          title.textContent = '謝謝反饋！哪些地方可以改進？';
+        } else {
+          title.textContent = '謝謝您的誠實！能告訴我們原因嗎？';
+        }
+      }
+
+      function submitFeedback() {
+        const satisfaction = document.querySelector('input[name="satisfaction"]:checked')?.value;
+        const comment = document.getElementById('feedbackText').value.trim();
+        
+        if (!satisfaction) {
+          showNotification('請選擇您的感受', 'warning');
+          return;
+        }
+        
+        const feedback = {
+          satisfaction,
+          comment,
+          timestamp: new Date().toISOString(),
+          userId: analytics.userId,
+          userProfile: analytics.userProfile
+        };
+        
+        localStorage.setItem('p-person-feedback', JSON.stringify(feedback));
+        
+        trackEvent('feedback_submitted', {
+          satisfaction,
+          hasComment: comment.length > 0,
+          commentLength: comment.length
+        });
+        
+        showNotification('謝謝您的回饋！ 🙏');
+        closeFeedback();
+      }
+
+      function closeFeedback() {
+        document.getElementById('feedbackModal').classList.remove('active');
+        trackEvent('feedback_closed');
+      }
+    </script>
+  </body>
+</html>
