@@ -1,203 +1,173 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>P 人任務助手 — 優化版</title>
-  <style>
-    :root {
-      --bg: #ffffff;
-      --panel: #f9fafb;
-      --text: #0f172a;
-      --muted: #64748b;
-      --accent: #111827;
-      --success: #16a34a;
-      font-family: "Noto Sans TC", system-ui, sans-serif;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0b1220;
-        --panel: #111827;
-        --text: #e6eef8;
-        --muted: #9aa7b8;
-        --accent: #e6eef8;
-      }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 24px; }
-    .container { width: 420px; }
-    header { margin-bottom: 16px; }
-    header h1 { font-size: 20px; margin: 0; font-weight: 700; }
-    header p { margin: 0; font-size: 13px; color: var(--muted); }
-
-    /* 輸入區 */
-    .input-box { display: flex; gap: 6px; margin-bottom: 16px; }
-    input[type=text], input[type=date] { padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px; flex: 1; }
-    input[type=text]::placeholder { color: var(--muted); }
-    button { border: 0; padding: 8px 12px; border-radius: 10px; background: var(--accent); color: white; font-weight: 600; cursor: pointer; }
-    .btn-ghost { background: transparent; color: var(--muted); }
-
-    /* 清單區塊 */
-    .section { margin-bottom: 18px; }
-    .section-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-    ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
-    .task { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 10px; background: var(--panel); transition: all .3s ease; }
-    .task .left { display: flex; flex-direction: column; }
-    .task .title { font-size: 15px; margin: 0; }
-    .meta { font-size: 12px; color: var(--muted); }
-    .completed .title { color: var(--muted); text-decoration: line-through; }
-    .completed .meta { color: var(--success); }
-    .task.fade-out { opacity: 0; transform: scale(0.95); }
-
-    /* Toast 通知 */
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 10px 16px; border-radius: 10px; font-size: 13px; display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>極簡任務工具</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f8f8f8;
+    margin: 0; padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 { margin-top: 20px; }
+  .task-section { 
+    background: #fff; 
+    padding: 15px; 
+    margin: 10px 0; 
+    width: 300px; 
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  ul { list-style: none; padding: 0; }
+  li { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 6px 0; 
+    border-bottom: 1px solid #eee;
+  }
+  button { margin-left: 5px; }
+  input[type=text] { width: 70%; padding: 5px; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>P 人任務助手</h1>
-      <p>極簡 • 專注今日 • 不拖延</p>
-    </header>
 
-    <div class="input-box">
-      <input id="taskInput" type="text" placeholder="輸入任務..." maxlength="120">
-      <input id="taskDate" type="date">
-      <button id="addBtn">新增</button>
-    </div>
+<h1>極簡任務工具</h1>
 
-    <div class="section">
-      <div class="section-title">今日清單 <span id="todayCount"></span></div>
-      <ul id="todayList"></ul>
-    </div>
+<div class="task-section">
+  <h2>Inbox (靈感資料庫)</h2>
+  <input type="text" id="inboxInput" placeholder="新增靈感...">
+  <button onclick="addInboxTask()">加入</button>
+  <ul id="inboxList"></ul>
+</div>
 
-    <div class="section">
-      <div class="section-title">收件匣</div>
-      <ul id="inboxList"></ul>
-    </div>
+<div class="task-section">
+  <h2>Today (每日任務，最多 3)</h2>
+  <input type="text" id="todayInput" placeholder="新增今日任務...">
+  <button onclick="addTodayTask()">加入</button>
+  <ul id="todayList"></ul>
+</div>
 
-    <div class="section">
-      <div class="section-title">已完成</div>
-      <ul id="doneList"></ul>
-    </div>
-  </div>
+<div class="task-section">
+  <h2>Done</h2>
+  <ul id="doneList"></ul>
+</div>
 
-  <div id="toast"></div>
+<script>
+  const MAX_TODAY = 3;
 
-  <script>
-    let tasks = { inbox: [], today: [], done: [] };
-    const storageKey = "p_person_tasks";
+  // LocalStorage Keys
+  const STORAGE_KEYS = {
+    inbox: 'tasks_inbox',
+    today: 'tasks_today',
+    done: 'tasks_done',
+    lastDate: 'tasks_last_date'
+  }
 
-    function save() { localStorage.setItem(storageKey, JSON.stringify(tasks)); }
-    function load() {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) tasks = JSON.parse(raw);
+  // 初始化
+  let inboxTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.inbox)) || [];
+  let todayTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.today)) || [];
+  let doneTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.done)) || [];
+  const todayDate = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+
+  // 每日刷新 Today 任務
+  const lastDate = localStorage.getItem(STORAGE_KEYS.lastDate);
+  if (lastDate !== todayDate) {
+    todayTasks = [];
+    localStorage.setItem(STORAGE_KEYS.lastDate, todayDate);
+    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
+  }
+
+  // 渲染函數
+  function renderTasks() {
+    // Inbox
+    const inboxList = document.getElementById('inboxList');
+    inboxList.innerHTML = '';
+    inboxTasks.forEach((task, index) => {
+      const li = document.createElement('li');
+      li.textContent = task;
+      const btn = document.createElement('button');
+      btn.textContent = '→Today';
+      btn.onclick = () => moveToToday(index);
+      li.appendChild(btn);
+      inboxList.appendChild(li);
+    });
+
+    // Today
+    const todayList = document.getElementById('todayList');
+    todayList.innerHTML = '';
+    todayTasks.slice(0, MAX_TODAY).forEach((task, index) => {
+      const li = document.createElement('li');
+      li.textContent = task.title + ' (' + task.date + ')';
+      const btn = document.createElement('button');
+      btn.textContent = '完成';
+      btn.onclick = () => completeToday(index);
+      li.appendChild(btn);
+      todayList.appendChild(li);
+    });
+
+    // Done
+    const doneList = document.getElementById('doneList');
+    doneList.innerHTML = '';
+    doneTasks.forEach(task => {
+      const li = document.createElement('li');
+      li.textContent = task.title + ' (' + task.date + ')';
+      doneList.appendChild(li);
+    });
+  }
+
+  // 新增 Inbox
+  function addInboxTask() {
+    const input = document.getElementById('inboxInput');
+    if (input.value.trim() !== '') {
+      inboxTasks.push(input.value.trim());
+      input.value = '';
+      localStorage.setItem(STORAGE_KEYS.inbox, JSON.stringify(inboxTasks));
+      renderTasks();
     }
-    function formatDate(d) {
-      if (!d) return "";
-      const dt = new Date(d);
-      return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`;
+  }
+
+  // 新增 Today
+  function addTodayTask() {
+    const input = document.getElementById('todayInput');
+    if (input.value.trim() === '') return;
+    if (todayTasks.length >= MAX_TODAY) {
+      alert('今日任務已達上限（3 個）');
+      return;
     }
+    todayTasks.push({ title: input.value.trim(), date: todayDate });
+    input.value = '';
+    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
+    renderTasks();
+  }
 
-    function showToast(msg) {
-      const el = document.getElementById("toast");
-      el.textContent = msg;
-      el.style.display = "block";
-      el.style.opacity = "1";
-      setTimeout(() => { el.style.opacity = "0"; }, 2000);
-      setTimeout(() => { el.style.display = "none"; }, 2500);
+  // Inbox → Today
+  function moveToToday(index) {
+    if (todayTasks.length >= MAX_TODAY) {
+      alert('今日任務已達上限（3 個）');
+      return;
     }
+    const taskTitle = inboxTasks.splice(index, 1)[0];
+    todayTasks.push({ title: taskTitle, date: todayDate });
+    localStorage.setItem(STORAGE_KEYS.inbox, JSON.stringify(inboxTasks));
+    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
+    renderTasks();
+  }
 
-    function addTask() {
-      const text = document.getElementById("taskInput").value.trim();
-      const date = document.getElementById("taskDate").value;
-      if (!text) return;
-      const t = { id: Date.now(), text, date, created: new Date().toISOString() };
-      if (date) tasks.today.unshift(t);
-      else tasks.inbox.unshift(t);
-      document.getElementById("taskInput").value = "";
-      document.getElementById("taskDate").value = "";
-      save(); render(); showToast("任務已新增");
-    }
+  // 完成 Today 任務
+  function completeToday(index) {
+    const task = todayTasks.splice(index, 1)[0];
+    doneTasks.push(task);
+    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
+    localStorage.setItem(STORAGE_KEYS.done, JSON.stringify(doneTasks));
+    renderTasks();
+  }
 
-    function moveToToday(id) {
-      const idx = tasks.inbox.findIndex(t => t.id === id);
-      if (idx > -1) {
-        const task = tasks.inbox.splice(idx, 1)[0];
-        tasks.today.unshift(task);
-        save(); render(); showToast("已加入今日");
-      }
-    }
+  renderTasks();
+</script>
 
-    function completeTask(id, from) {
-      const list = from === "today" ? tasks.today : tasks.inbox;
-      const idx = list.findIndex(t => t.id === id);
-      if (idx > -1) {
-        const task = list.splice(idx, 1)[0];
-        task.doneAt = new Date().toISOString();
-        tasks.done.unshift(task);
-        save(); render(); showToast("完成任務 ✅");
-      }
-    }
-
-    function deleteTask(id, from) {
-      const list = tasks[from];
-      const idx = list.findIndex(t => t.id === id);
-      if (idx > -1) {
-        list.splice(idx, 1);
-        save(); render(); showToast("已刪除");
-      }
-    }
-
-    function render() {
-      const todayList = document.getElementById("todayList");
-      todayList.innerHTML = tasks.today.map(t => `
-        <li class="task">
-          <div class="left">
-            <div class="title">${t.text}</div>
-            <div class="meta">${t.date ? formatDate(t.date) : formatDate(t.created)}</div>
-          </div>
-          <div>
-            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'today')">刪除</button>
-            <button onclick="completeTask(${t.id}, 'today')">完成</button>
-          </div>
-        </li>
-      `).join("");
-      document.getElementById("todayCount").textContent = `(${tasks.today.length})`;
-
-      const inboxList = document.getElementById("inboxList");
-      inboxList.innerHTML = tasks.inbox.map(t => `
-        <li class="task">
-          <div class="left">
-            <div class="title">${t.text}</div>
-            <div class="meta">${t.date ? formatDate(t.date) : ""}</div>
-          </div>
-          <div>
-            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'inbox')">刪除</button>
-            <button onclick="moveToToday(${t.id})">→ 今日</button>
-            <button class="btn-ghost" onclick="completeTask(${t.id}, 'inbox')">完成</button>
-          </div>
-        </li>
-      `).join("");
-
-      const doneList = document.getElementById("doneList");
-      doneList.innerHTML = tasks.done.map(t => `
-        <li class="task completed">
-          <div class="left">
-            <div class="title">${t.text}</div>
-            <div class="meta">完成於 ${formatDate(t.doneAt)}</div>
-          </div>
-          <div>
-            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'done')">刪除</button>
-          </div>
-        </li>
-      `).join("");
-    }
-
-    document.getElementById("addBtn").addEventListener("click", addTask);
-    document.getElementById("taskInput").addEventListener("keypress", e => { if (e.key === "Enter") addTask(); });
-
-    load(); render();
-  </script>
 </body>
 </html>
