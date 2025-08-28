@@ -1,255 +1,203 @@
 <!doctype html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>P 人任務助手 — 極簡版</title>
-    <style>
-      :root{
-        --bg: #ffffff;
-        --panel: #fafafa;
-        --text: #0f172a;
-        --muted: #64748b;
-        --accent: #111827;
-        --success: #10b981;
-        --radius: 12px;
-        --gap: 12px;
-        font-family: "Noto Sans TC", system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P 人任務助手 — 優化版</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #111827;
+      --success: #16a34a;
+      font-family: "Noto Sans TC", system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --panel: #111827;
+        --text: #e6eef8;
+        --muted: #9aa7b8;
+        --accent: #e6eef8;
       }
-      @media (prefers-color-scheme: dark){
-        :root{
-          --bg: #0b1220;
-          --panel: #071022;
-          --text: #e6eef8;
-          --muted: #9aa7b8;
-          --accent: #e6eef8;
-        }
-      }
-      *{box-sizing: border-box}
-      body{margin:0;background:var(--bg);color:var(--text);display:flex;align-items:flex-start;justify-content:center;padding:24px}
-      .container{width:420px;background:var(--panel);border-radius:16px;padding:18px;box-shadow:none}
-      header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-      header h1{font-size:18px;margin:0;font-weight:700;color:var(--accent)}
-      header p{margin:0;font-size:12px;color:var(--muted)}
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 24px; }
+    .container { width: 420px; }
+    header { margin-bottom: 16px; }
+    header h1 { font-size: 20px; margin: 0; font-weight: 700; }
+    header p { margin: 0; font-size: 13px; color: var(--muted); }
 
-      .row{display:flex;gap:8px;align-items:center}
-      .inbox{display:flex;gap:8px;margin-bottom:12px}
-      input[type=text], input[type=date]{flex:1;padding:10px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--text);font-size:14px}
-      input[type=text]::placeholder{color:var(--muted)}
-      button{border:0;padding:8px 12px;border-radius:10px;background:var(--accent);color:white;font-weight:600;cursor:pointer}
-      .btn-ghost{background:transparent;color:var(--muted);border:1px solid transparent}
+    /* 輸入區 */
+    .input-box { display: flex; gap: 6px; margin-bottom: 16px; }
+    input[type=text], input[type=date] { padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px; flex: 1; }
+    input[type=text]::placeholder { color: var(--muted); }
+    button { border: 0; padding: 8px 12px; border-radius: 10px; background: var(--accent); color: white; font-weight: 600; cursor: pointer; }
+    .btn-ghost { background: transparent; color: var(--muted); }
 
-      .section-title{font-size:13px;color:var(--muted);margin:6px 0}
-      ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
-      .task{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:transparent;border:1px solid transparent}
-      .task .left{display:flex;flex-direction:column;gap:6px}
-      .task .title{font-size:14px;margin:0;color:var(--text)}
-      .meta{font-size:12px;color:var(--muted)}
-      .actions{display:flex;gap:8px}
-      .chip{padding:6px 8px;border-radius:999px;font-size:12px;background:transparent;color:var(--muted);border:1px solid transparent}
+    /* 清單區塊 */
+    .section { margin-bottom: 18px; }
+    .section-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+    ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .task { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 10px; background: var(--panel); transition: all .3s ease; }
+    .task .left { display: flex; flex-direction: column; }
+    .task .title { font-size: 15px; margin: 0; }
+    .meta { font-size: 12px; color: var(--muted); }
+    .completed .title { color: var(--muted); text-decoration: line-through; }
+    .completed .meta { color: var(--success); }
+    .task.fade-out { opacity: 0; transform: scale(0.95); }
 
-      .completed .title{color:var(--muted);text-decoration:line-through}
-      .completed .chip{color:var(--success)}
+    /* Toast 通知 */
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 10px 16px; border-radius: 10px; font-size: 13px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>P 人任務助手</h1>
+      <p>極簡 • 專注今日 • 不拖延</p>
+    </header>
 
-      /* minimal responsive */
-      @media (max-width:440px){.container{width:100%;padding:14px}}
-
-      /* notification (single) */
-      #globalNotification{position:fixed;right:18px;top:18px;padding:10px 14px;border-radius:10px;background:var(--panel);border:1px solid rgba(0,0,0,0.06);box-shadow:none;color:var(--text);font-size:13px;display:none}
-    </style>
-  </head>
-  <body>
-    <div class="container" role="application">
-      <header>
-        <div>
-          <h1>P 人任務助手</h1>
-          <p>極簡 • 低干擾 • 快速記錄</p>
-        </div>
-      </header>
-
-      <!-- 輸入區：文字 + 可選日期 + 新增按鈕 -->
-      <div class="inbox">
-        <input id="ideaInput" type="text" placeholder="新增想法或任務（可選日期）" maxlength="120">
-        <input id="ideaDate" type="date">
-        <button id="addBtn">新增</button>
-      </div>
-
-      <div>
-        <div class="section-title">今日清單 <span id="taskCounter" style="float:right;color:var(--muted)"></span></div>
-        <ul id="todayTasks"></ul>
-        <div id="emptyState" style="text-align:center;color:var(--muted);padding:12px;font-size:13px">今日清單為空，將任務加入今日清單即可開始。</div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="section-title">收件匣（待整理）</div>
-        <ul id="inboxTasks"></ul>
-        <div id="inboxEmpty" style="text-align:center;color:var(--muted);padding:12px;font-size:13px">收件匣為空</div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="section-title">已完成</div>
-        <ul id="completedTasks"></ul>
-      </div>
+    <div class="input-box">
+      <input id="taskInput" type="text" placeholder="輸入任務..." maxlength="120">
+      <input id="taskDate" type="date">
+      <button id="addBtn">新增</button>
     </div>
 
-    <div id="globalNotification" role="status" aria-live="polite"></div>
+    <div class="section">
+      <div class="section-title">今日清單 <span id="todayCount"></span></div>
+      <ul id="todayList"></ul>
+    </div>
 
-    <script>
-      // 極簡版：移除 GA & 回饋表單 & 計時器
+    <div class="section">
+      <div class="section-title">收件匣</div>
+      <ul id="inboxList"></ul>
+    </div>
 
-      // 資料結構
-      let tasks = { inbox: [], today: [], completed: [] };
+    <div class="section">
+      <div class="section-title">已完成</div>
+      <ul id="doneList"></ul>
+    </div>
+  </div>
 
-      // 載入 / 存儲
-      function saveData(){
-        const data = { inbox: tasks.inbox, today: tasks.today, completed: tasks.completed };
-        localStorage.setItem('p_person_simple', JSON.stringify(data));
+  <div id="toast"></div>
+
+  <script>
+    let tasks = { inbox: [], today: [], done: [] };
+    const storageKey = "p_person_tasks";
+
+    function save() { localStorage.setItem(storageKey, JSON.stringify(tasks)); }
+    function load() {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) tasks = JSON.parse(raw);
+    }
+    function formatDate(d) {
+      if (!d) return "";
+      const dt = new Date(d);
+      return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`;
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      el.style.opacity = "1";
+      setTimeout(() => { el.style.opacity = "0"; }, 2000);
+      setTimeout(() => { el.style.display = "none"; }, 2500);
+    }
+
+    function addTask() {
+      const text = document.getElementById("taskInput").value.trim();
+      const date = document.getElementById("taskDate").value;
+      if (!text) return;
+      const t = { id: Date.now(), text, date, created: new Date().toISOString() };
+      if (date) tasks.today.unshift(t);
+      else tasks.inbox.unshift(t);
+      document.getElementById("taskInput").value = "";
+      document.getElementById("taskDate").value = "";
+      save(); render(); showToast("任務已新增");
+    }
+
+    function moveToToday(id) {
+      const idx = tasks.inbox.findIndex(t => t.id === id);
+      if (idx > -1) {
+        const task = tasks.inbox.splice(idx, 1)[0];
+        tasks.today.unshift(task);
+        save(); render(); showToast("已加入今日");
       }
-      function loadData(){
-        const raw = localStorage.getItem('p_person_simple');
-        if(!raw) return;
-        try{ const d = JSON.parse(raw); tasks.inbox = d.inbox||[]; tasks.today = d.today||[]; tasks.completed = d.completed||[] }catch(e){}
+    }
+
+    function completeTask(id, from) {
+      const list = from === "today" ? tasks.today : tasks.inbox;
+      const idx = list.findIndex(t => t.id === id);
+      if (idx > -1) {
+        const task = list.splice(idx, 1)[0];
+        task.doneAt = new Date().toISOString();
+        tasks.done.unshift(task);
+        save(); render(); showToast("完成任務 ✅");
       }
+    }
 
-      // 格式化日期 YYYY/MM/DD
-      function formatDateISO(d){
-        if(!d) return '';
-        const dt = new Date(d);
-        if (isNaN(dt)) return d; // if already string
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth()+1).padStart(2,'0');
-        const day = String(dt.getDate()).padStart(2,'0');
-        return `${y}/${m}/${day}`;
+    function deleteTask(id, from) {
+      const list = tasks[from];
+      const idx = list.findIndex(t => t.id === id);
+      if (idx > -1) {
+        list.splice(idx, 1);
+        save(); render(); showToast("已刪除");
       }
+    }
 
-      // 通知：單一通知元素，會覆蓋更新而非重複疊加
-      let notifyTimer = null;
-      function showNotification(msg, ms = 2500){
-        const el = document.getElementById('globalNotification');
-        el.textContent = msg;
-        el.style.display = 'block';
-        if(notifyTimer) clearTimeout(notifyTimer);
-        notifyTimer = setTimeout(()=>{ el.style.display = 'none'; notifyTimer = null; }, ms);
-      }
+    function render() {
+      const todayList = document.getElementById("todayList");
+      todayList.innerHTML = tasks.today.map(t => `
+        <li class="task">
+          <div class="left">
+            <div class="title">${t.text}</div>
+            <div class="meta">${t.date ? formatDate(t.date) : formatDate(t.created)}</div>
+          </div>
+          <div>
+            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'today')">刪除</button>
+            <button onclick="completeTask(${t.id}, 'today')">完成</button>
+          </div>
+        </li>
+      `).join("");
+      document.getElementById("todayCount").textContent = `(${tasks.today.length})`;
 
-      // 新增到收件匣（可選日期）
-      function addIdea(){
-        const text = document.getElementById('ideaInput').value.trim();
-        const dateVal = document.getElementById('ideaDate').value || null;
-        if(!text) return;
-        const t = { id: Date.now(), text, date: dateVal, createdAt: new Date().toISOString(), location: 'inbox', status: 'todo' };
-        tasks.inbox.unshift(t);
-        document.getElementById('ideaInput').value = '';
-        document.getElementById('ideaDate').value = '';
-        saveData(); renderTasks(); showNotification('已加入收件匣');
-      }
+      const inboxList = document.getElementById("inboxList");
+      inboxList.innerHTML = tasks.inbox.map(t => `
+        <li class="task">
+          <div class="left">
+            <div class="title">${t.text}</div>
+            <div class="meta">${t.date ? formatDate(t.date) : ""}</div>
+          </div>
+          <div>
+            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'inbox')">刪除</button>
+            <button onclick="moveToToday(${t.id})">→ 今日</button>
+            <button class="btn-ghost" onclick="completeTask(${t.id}, 'inbox')">完成</button>
+          </div>
+        </li>
+      `).join("");
 
-      // 移到今日清單（不啟動計時）
-      function moveToToday(id){
-        if(tasks.today.length >= 1000){ showNotification('今日清單已滿'); return; } // keep large cap
-        const idx = tasks.inbox.findIndex(t=>t.id===id);
-        if(idx===-1) return;
-        const task = tasks.inbox.splice(idx,1)[0];
-        task.location = 'today';
-        task.status = 'todo';
-        tasks.today.push(task);
-        saveData(); renderTasks(); showNotification('已加入今日清單');
-      }
+      const doneList = document.getElementById("doneList");
+      doneList.innerHTML = tasks.done.map(t => `
+        <li class="task completed">
+          <div class="left">
+            <div class="title">${t.text}</div>
+            <div class="meta">完成於 ${formatDate(t.doneAt)}</div>
+          </div>
+          <div>
+            <button class="btn-ghost" onclick="deleteTask(${t.id}, 'done')">刪除</button>
+          </div>
+        </li>
+      `).join("");
+    }
 
-      // 直接完成任務（今日清單或收件匣也可直接標為完成）
-      function completeTask(id, from){
-        // from: 'today'|'inbox'
-        let sourceArr = from==='inbox' ? tasks.inbox : tasks.today;
-        const idx = sourceArr.findIndex(t=>t.id===id);
-        if(idx===-1) return;
-        const task = sourceArr.splice(idx,1)[0];
-        task.status = 'completed';
-        task.completedAt = new Date().toISOString();
-        task.location = 'completed';
-        tasks.completed.unshift(task);
-        saveData(); renderTasks(); showNotification('任務已標記為完成', 3000);
-      }
+    document.getElementById("addBtn").addEventListener("click", addTask);
+    document.getElementById("taskInput").addEventListener("keypress", e => { if (e.key === "Enter") addTask(); });
 
-      // 刪除
-      function deleteTask(id, from){
-        let arr = from==='inbox' ? tasks.inbox : from==='today' ? tasks.today : tasks.completed;
-        const idx = arr.findIndex(t=>t.id===id);
-        if(idx!==-1){ arr.splice(idx,1); saveData(); renderTasks(); showNotification('已刪除'); }
-      }
-
-      // render
-      function renderTasks(){
-        // today
-        const todayEl = document.getElementById('todayTasks'); todayEl.innerHTML='';
-        tasks.today.forEach(t=>{
-          const li = document.createElement('li'); li.className = 'task';
-          li.innerHTML = `
-            <div class="left">
-              <div class="title">${escapeHTML(t.text)}</div>
-              <div class="meta">${t.date ? formatDateISO(t.date) : formatDateISO(t.createdAt)}</div>
-            </div>
-            <div class="actions">
-              <button class="btn-ghost" onclick="deleteTask(${t.id}, 'today')">刪除</button>
-              <button onclick="completeTask(${t.id}, 'today')">完成</button>
-            </div>
-          `;
-          todayEl.appendChild(li);
-        });
-        document.getElementById('emptyState').style.display = tasks.today.length? 'none':'block';
-        document.getElementById('taskCounter').textContent = `(${tasks.today.length})`;
-
-        // inbox
-        const inboxEl = document.getElementById('inboxTasks'); inboxEl.innerHTML='';
-        tasks.inbox.forEach(t=>{
-          const li = document.createElement('li'); li.className='task';
-          li.innerHTML = `
-            <div class="left">
-              <div class="title">${escapeHTML(t.text)}</div>
-              <div class="meta">${t.date ? formatDateISO(t.date) : ''}</div>
-            </div>
-            <div class="actions">
-              <button class="btn-ghost" onclick="deleteTask(${t.id}, 'inbox')">刪除</button>
-              <button onclick="moveToToday(${t.id})">→ 今日</button>
-              <button class="btn-ghost" onclick="completeTask(${t.id}, 'inbox')">完成</button>
-            </div>
-          `;
-          inboxEl.appendChild(li);
-        });
-        document.getElementById('inboxEmpty').style.display = tasks.inbox.length? 'none':'block';
-
-        // completed
-        const compEl = document.getElementById('completedTasks'); compEl.innerHTML='';
-        tasks.completed.forEach(t=>{
-          const li = document.createElement('li'); li.className='task completed';
-          li.innerHTML = `
-            <div class="left">
-              <div class="title">${escapeHTML(t.text)}</div>
-              <div class="meta">${formatDateISO(t.completedAt || t.date || t.createdAt)}</div>
-            </div>
-            <div class="actions">
-              <button class="btn-ghost" onclick="deleteTask(${t.id}, 'completed')">刪除</button>
-            </div>
-          `;
-          compEl.appendChild(li);
-        });
-      }
-
-      // 小工具：避開 XSS
-      function escapeHTML(str){ return String(str).replace(/[&<>"]/g, function(s){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]; }); }
-
-      // 綁定
-      document.getElementById('addBtn').addEventListener('click', addIdea);
-      document.getElementById('ideaInput').addEventListener('keypress', function(e){ if(e.key==='Enter') addIdea(); });
-
-      // init
-      loadData(); renderTasks();
-
-      // Demo: 若首次使用，加入示範項目
-      if(!localStorage.getItem('p_person_simple_demo')){
-        tasks.inbox.push({id:Date.now()+1,text:'示範：整理旅遊清單',date:null,createdAt:new Date().toISOString(),location:'inbox',status:'todo'});
-        tasks.today.push({id:Date.now()+2,text:'示範：回覆信件',date:new Date().toISOString(),createdAt:new Date().toISOString(),location:'today',status:'todo'});
-        localStorage.setItem('p_person_simple_demo','1'); saveData(); renderTasks();
-      }
-    </script>
-  </body>
+    load(); render();
+  </script>
+</body>
 </html>
