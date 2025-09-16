@@ -5,30 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>極簡任務工具</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f8f8f8;
-    margin: 0; padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+  body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
   h2 { margin-top: 20px; }
-  .task-section { 
-    background: #fff; 
-    padding: 15px; 
-    margin: 10px 0; 
-    width: 300px; 
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
+  .task-section { background: #fff; padding: 15px; margin: 10px 0; width: 300px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);}
   ul { list-style: none; padding: 0; }
-  li { 
-    display: flex; 
-    justify-content: space-between; 
-    padding: 6px 0; 
-    border-bottom: 1px solid #eee;
-  }
+  li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
   button { margin-left: 5px; }
   input[type=text] { width: 70%; padding: 5px; }
 </style>
@@ -57,116 +38,97 @@
 </div>
 
 <script>
-  const MAX_TODAY = 3;
+const MAX_TODAY = 3;
+const API_URL = 'http://localhost:3000'; // 上線後改成你的域名
+const todayDate = new Date().toISOString().split('T')[0];
 
-  // LocalStorage Keys
-  const STORAGE_KEYS = {
-    inbox: 'tasks_inbox',
-    today: 'tasks_today',
-    done: 'tasks_done',
-    lastDate: 'tasks_last_date'
-  }
+let inboxTasks = [];
+let todayTasks = [];
+let doneTasks = [];
 
-  // 初始化
-  let inboxTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.inbox)) || [];
-  let todayTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.today)) || [];
-  let doneTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.done)) || [];
-  const todayDate = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+function loadTasks() {
+  fetch(`${API_URL}/tasks?type=inbox`).then(res=>res.json()).then(data=>{inboxTasks=data; renderTasks();});
+  fetch(`${API_URL}/tasks?type=today`).then(res=>res.json()).then(data=>{todayTasks=data; renderTasks();});
+  fetch(`${API_URL}/tasks?type=done`).then(res=>res.json()).then(data=>{doneTasks=data; renderTasks();});
+}
 
-  // 每日刷新 Today 任務
-  const lastDate = localStorage.getItem(STORAGE_KEYS.lastDate);
-  if (lastDate !== todayDate) {
-    todayTasks = [];
-    localStorage.setItem(STORAGE_KEYS.lastDate, todayDate);
-    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
-  }
+function renderTasks() {
+  const inboxList = document.getElementById('inboxList');
+  inboxList.innerHTML = '';
+  inboxTasks.forEach(task=>{
+    const li = document.createElement('li');
+    li.textContent = task.title;
+    const btn = document.createElement('button');
+    btn.textContent = '→Today';
+    btn.onclick = ()=>moveToToday(task.id);
+    li.appendChild(btn);
+    inboxList.appendChild(li);
+  });
 
-  // 渲染函數
-  function renderTasks() {
-    // Inbox
-    const inboxList = document.getElementById('inboxList');
-    inboxList.innerHTML = '';
-    inboxTasks.forEach((task, index) => {
-      const li = document.createElement('li');
-      li.textContent = task;
-      const btn = document.createElement('button');
-      btn.textContent = '→Today';
-      btn.onclick = () => moveToToday(index);
-      li.appendChild(btn);
-      inboxList.appendChild(li);
-    });
+  const todayList = document.getElementById('todayList');
+  todayList.innerHTML = '';
+  todayTasks.slice(0, MAX_TODAY).forEach(task=>{
+    const li = document.createElement('li');
+    li.textContent = task.title + ' (' + task.date + ')';
+    const btn = document.createElement('button');
+    btn.textContent = '完成';
+    btn.onclick = ()=>completeToday(task.id);
+    li.appendChild(btn);
+    todayList.appendChild(li);
+  });
 
-    // Today
-    const todayList = document.getElementById('todayList');
-    todayList.innerHTML = '';
-    todayTasks.slice(0, MAX_TODAY).forEach((task, index) => {
-      const li = document.createElement('li');
-      li.textContent = task.title + ' (' + task.date + ')';
-      const btn = document.createElement('button');
-      btn.textContent = '完成';
-      btn.onclick = () => completeToday(index);
-      li.appendChild(btn);
-      todayList.appendChild(li);
-    });
+  const doneList = document.getElementById('doneList');
+  doneList.innerHTML = '';
+  doneTasks.forEach(task=>{
+    const li = document.createElement('li');
+    li.textContent = task.title + ' (' + task.date + ')';
+    doneList.appendChild(li);
+  });
+}
 
-    // Done
-    const doneList = document.getElementById('doneList');
-    doneList.innerHTML = '';
-    doneTasks.forEach(task => {
-      const li = document.createElement('li');
-      li.textContent = task.title + ' (' + task.date + ')';
-      doneList.appendChild(li);
-    });
-  }
+// 新增 Inbox
+function addInboxTask() {
+  const input=document.getElementById('inboxInput');
+  if(input.value.trim()==='') return;
+  fetch(`${API_URL}/tasks`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title:input.value.trim(),type:'inbox',date:todayDate})
+  }).then(()=>{input.value=''; loadTasks();});
+}
 
-  // 新增 Inbox
-  function addInboxTask() {
-    const input = document.getElementById('inboxInput');
-    if (input.value.trim() !== '') {
-      inboxTasks.push(input.value.trim());
-      input.value = '';
-      localStorage.setItem(STORAGE_KEYS.inbox, JSON.stringify(inboxTasks));
-      renderTasks();
-    }
-  }
+// 新增 Today
+function addTodayTask() {
+  if(todayTasks.length>=MAX_TODAY){alert('今日任務已達上限（3個）');return;}
+  const input=document.getElementById('todayInput');
+  if(input.value.trim()==='') return;
+  fetch(`${API_URL}/tasks`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title:input.value.trim(),type:'today',date:todayDate})
+  }).then(()=>{input.value=''; loadTasks();});
+}
 
-  // 新增 Today
-  function addTodayTask() {
-    const input = document.getElementById('todayInput');
-    if (input.value.trim() === '') return;
-    if (todayTasks.length >= MAX_TODAY) {
-      alert('今日任務已達上限（3 個）');
-      return;
-    }
-    todayTasks.push({ title: input.value.trim(), date: todayDate });
-    input.value = '';
-    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
-    renderTasks();
-  }
+// Inbox → Today
+function moveToToday(id){
+  if(todayTasks.length>=MAX_TODAY){alert('今日任務已達上限（3個）'); return;}
+  fetch(`${API_URL}/tasks/${id}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'today'})
+  }).then(()=>loadTasks());
+}
 
-  // Inbox → Today
-  function moveToToday(index) {
-    if (todayTasks.length >= MAX_TODAY) {
-      alert('今日任務已達上限（3 個）');
-      return;
-    }
-    const taskTitle = inboxTasks.splice(index, 1)[0];
-    todayTasks.push({ title: taskTitle, date: todayDate });
-    localStorage.setItem(STORAGE_KEYS.inbox, JSON.stringify(inboxTasks));
-    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
-    renderTasks();
-  }
+// Today → Done
+function completeToday(id){
+  fetch(`${API_URL}/tasks/${id}`,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'done'})
+  }).then(()=>loadTasks());
+}
 
-  // 完成 Today 任務
-  function completeToday(index) {
-    const task = todayTasks.splice(index, 1)[0];
-    doneTasks.push(task);
-    localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayTasks));
-    localStorage.setItem(STORAGE_KEYS.done, JSON.stringify(doneTasks));
-    renderTasks();
-  }
-
-  renderTasks();
+loadTasks();
 </script>
 
 </body>
